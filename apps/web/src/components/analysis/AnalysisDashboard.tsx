@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { FileText, Brain, Lightbulb, DollarSign, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import { useAnalysis } from '@/hooks/useAnalysis'
 import { formatCurrency, formatTime } from '@/lib/utils'
+import { FormattedText, FormattedList, toTitleCase } from '@/components/ui/FormattedText'
 
 interface AnalysisDashboardProps {
   jobId: string
@@ -197,14 +198,20 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                             {flaw.severity}
                           </span>
                           <span className="text-sm text-gray-600">
-                            {flaw.category}
+                            {toTitleCase(flaw.category)}
                           </span>
                         </div>
-                        <p className="text-gray-800">{flaw.description}</p>
-                        {flaw.suggested_fix && (
-                          <p className="text-sm text-gray-600 mt-2">
-                            <strong>Fix:</strong> {flaw.suggested_fix}
+                        <FormattedText text={flaw.description} className="text-gray-800" />
+                        {flaw.impact && (
+                          <p className="text-sm text-gray-500 mt-1 italic">
+                            Impact: {flaw.impact}
                           </p>
+                        )}
+                        {flaw.suggested_fix && (
+                          <div className="text-sm text-gray-600 mt-2">
+                            <strong>Suggested Fix:</strong>{' '}
+                            <FormattedText text={flaw.suggested_fix} as="span" />
+                          </div>
                         )}
                       </div>
                     ))}
@@ -225,9 +232,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                     <span className="text-sm font-medium text-gray-600">
                       Size Assessment:
                     </span>{' '}
-                    <span className="text-gray-900 capitalize">
-                      {dataset.size_assessment || 'Not assessed'}
-                    </span>
+                    <FormattedText text={dataset.size_assessment || 'Not assessed'} as="span" className="text-gray-900 capitalize" />
                   </div>
 
                   {dataset.bias_sources?.length > 0 && (
@@ -235,11 +240,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                       <span className="text-sm font-medium text-gray-600">
                         Potential Bias Sources:
                       </span>
-                      <ul className="mt-1 list-disc list-inside text-gray-900">
-                        {dataset.bias_sources.map((bias: string, i: number) => (
-                          <li key={i}>{bias}</li>
-                        ))}
-                      </ul>
+                      <FormattedList items={dataset.bias_sources} className="mt-1 text-gray-900" />
                     </div>
                   )}
 
@@ -248,13 +249,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                       <span className="text-sm font-medium text-gray-600">
                         Recommendations:
                       </span>
-                      <ul className="mt-1 list-disc list-inside text-gray-900">
-                        {dataset.recommendations.map(
-                          (rec: string, i: number) => (
-                            <li key={i}>{rec}</li>
-                          )
-                        )}
-                      </ul>
+                      <FormattedList items={dataset.recommendations} className="mt-1 text-gray-900" />
                     </div>
                   )}
                 </div>
@@ -281,9 +276,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                           <h4 className="font-medium text-gray-900">
                             {i + 1}. {exp.title}
                           </h4>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {exp.hypothesis}
-                          </p>
+                          <FormattedText text={exp.hypothesis} className="text-sm text-gray-600 mt-1" />
                         </div>
                         <div className="text-right">
                           <span className="text-sm text-gray-500">
@@ -298,15 +291,18 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                         </div>
                       </div>
                       <div className="mt-3 text-sm text-gray-600">
-                        <p>
-                          <strong>Method:</strong> {exp.method}
-                        </p>
-                        <p className="mt-1">
-                          <strong>Expected:</strong> {exp.expected_outcome}
-                        </p>
-                        <p className="mt-1">
-                          <strong>Budget:</strong> {exp.estimated_budget}
-                        </p>
+                        <div>
+                          <strong>Method:</strong>{' '}
+                          <FormattedText text={exp.method} as="span" />
+                        </div>
+                        <div className="mt-1">
+                          <strong>Expected:</strong>{' '}
+                          <FormattedText text={exp.expected_outcome} as="span" />
+                        </div>
+                        <div className="mt-1">
+                          <strong>Budget:</strong>{' '}
+                          <FormattedText text={exp.estimated_budget} as="span" />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -320,13 +316,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                   <h4 className="font-medium text-indigo-900 mb-2">
                     Key Insights
                   </h4>
-                  <ul className="list-disc list-inside text-indigo-800 space-y-1">
-                    {data.improvements.key_insights.map(
-                      (insight: string, i: number) => (
-                        <li key={i}>{insight}</li>
-                      )
-                    )}
-                  </ul>
+                  <FormattedList items={data.improvements.key_insights} className="text-indigo-800" />
                 </div>
               )}
             </div>
@@ -352,13 +342,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                       <h5 className="font-medium text-gray-900 mb-2">
                         Specific Aims
                       </h5>
-                      <ul className="list-decimal list-inside space-y-2">
-                        {grant.specific_aims.map((aim: string, i: number) => (
-                          <li key={i} className="text-gray-700">
-                            {aim}
-                          </li>
-                        ))}
-                      </ul>
+                      <FormattedList items={grant.specific_aims} className="text-gray-700" ordered />
                     </div>
                   )}
 
@@ -367,7 +351,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                       <h5 className="font-medium text-gray-900 mb-2">
                         Research Strategy
                       </h5>
-                      <p className="text-gray-700">{grant.research_strategy}</p>
+                      <FormattedText text={grant.research_strategy} className="text-gray-700" />
                     </div>
                   )}
 
@@ -376,7 +360,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                       <h5 className="font-medium text-gray-900 mb-2">
                         Expected Outcomes
                       </h5>
-                      <p className="text-gray-700">{grant.expected_outcomes}</p>
+                      <FormattedText text={grant.expected_outcomes} className="text-gray-700" />
                     </div>
                   )}
 
