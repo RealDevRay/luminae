@@ -14,7 +14,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "python-multipart>=0.0.6",
     "aiofiles>=23.2.1",
-    "hashlib>=1.0",
+    "mistralai>=1.0.0",
 ]
 
 [project.optional-dependencies]

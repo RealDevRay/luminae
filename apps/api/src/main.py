@@ -13,6 +13,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
+import os as _os
+
+@app.on_event("startup")
+async def validate_config():
+    api_key = _os.getenv("LUMINAE_MISTRAL_API_KEY", "")
+    if api_key:
+        print(f"✅ Mistral API key loaded ({len(api_key)} chars)")
+    else:
+        print("❌ WARNING: LUMINAE_MISTRAL_API_KEY is empty! OCR/Analysis will fail.")
+
 # --- Exception handler: always include CORS headers on errors ---
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
