@@ -1,5 +1,6 @@
 import time
-from fastapi import Request, HTTPException
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from typing import Optional
 
 MAX_REQUESTS_PER_MINUTE = 10
@@ -59,9 +60,10 @@ async def rate_limit_middleware(request: Request, call_next):
         return await call_next(request)
 
     if not await rate_limiter.check_rate_limit(request):
-        raise HTTPException(
+        # Return JSONResponse directly — do NOT raise HTTPException in middleware
+        return JSONResponse(
             status_code=429,
-            detail="Rate limit exceeded. Max 10 requests per minute.",
+            content={"detail": "Rate limit exceeded. Max 10 requests per minute."},
         )
 
     response = await call_next(request)
