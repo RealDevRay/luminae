@@ -65,7 +65,7 @@ async def rate_limit_middleware(request: Request, call_next):
         # Return JSONResponse directly — do NOT raise HTTPException in middleware
         return JSONResponse(
             status_code=429,
-            content={"detail": "Rate limit exceeded. Max 10 requests per minute."},
+            content={"detail": "Rate limit exceeded. Max 60 requests per minute."},
         )
 
     response = await call_next(request)
