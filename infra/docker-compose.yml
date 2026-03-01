@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - LUMINAE_MISTRAL_API_KEY=${LUMINAE_MISTRAL_API_KEY}
+      - LUMINAE_MISTRAL_BUDGET_USD=15.00
+      - LUMINAE_MAX_REQUEST_USD=0.50
+      - LUMINAE_SUPABASE_URL=${LUMINAE_SUPABASE_URL}
+      - LUMINAE_SUPABASE_ANON_KEY=${LUMINAE_SUPABASE_ANON_KEY}
+      - LUMINAE_UPSTASH_REDIS_REST_URL=${LUMINAE_UPSTASH_REDIS_REST_URL}
+      - LUMINAE_UPSTASH_REDIS_REST_TOKEN=${LUMINAE_UPSTASH_REDIS_REST_TOKEN}
+    volumes:
+      - ./apps/api:/app
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    depends_on:
+      - api
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=luminae_dev
+      - POSTGRES_DB=luminae
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
