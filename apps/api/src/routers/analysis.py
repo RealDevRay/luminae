@@ -124,7 +124,7 @@ async def analyze_paper(request: AnalysisRequest, background_tasks: BackgroundTa
     file_hash = hashlib.sha256(file_content).hexdigest()
 
     options = request.options.model_dump() if request.options else {}
-    estimated_cost = 0.82
+    estimated_cost = 0.05
 
     if not await budget_protection.check_request_budget(estimated_cost):
         raise HTTPException(
