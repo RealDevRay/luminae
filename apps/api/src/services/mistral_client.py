@@ -1,4 +1,5 @@
 import base64
+import os
 from typing import Optional
 from mistralai import Mistral
 from ..config import get_settings
@@ -10,7 +11,9 @@ settings = get_settings()
 class MistralClient:
     def _get_client(self):
         # Instantiate lazily to ensure pydantic loads the LUMINAE_ prefixed env vars
-        return Mistral(api_key=get_settings().mistral_api_key)
+        # Fallback to direct OS environment for absolute safety
+        api_key = os.getenv("LUMINAE_MISTRAL_API_KEY") or get_settings().mistral_api_key
+        return Mistral(api_key=api_key)
 
     async def chat_complete(
         self,

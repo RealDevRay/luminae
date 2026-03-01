@@ -95,7 +95,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-background border border-border rounded-2xl p-6">
               <h2 className="text-lg font-semibold mb-4">
-                Upload Research Paper
+                Upload Document
               </h2>
               <UploadZone onAnalysisComplete={setCurrentJobId} isGuestMode={isGuestMode} />
             </div>
@@ -114,6 +114,14 @@ export default function DashboardPage() {
       </main>
 
       <Chatbot />
+
+      <footer className="border-t mt-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-xs text-center text-muted-foreground">
+            Built by <strong>Aletheia Labs</strong> for the <strong>Mistral Worldwide Hackathon 2026</strong> • Powered by Mistral AI
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }

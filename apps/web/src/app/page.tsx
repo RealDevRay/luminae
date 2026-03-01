@@ -254,8 +254,8 @@ export default function HomePage() {
               </div>
               <span className="font-bold">Luminae</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              © 2026 Luminae. Built with Mistral AI for the Online Hackathon.
+            <p className="text-sm text-muted-foreground text-center">
+              Built by <strong>Aletheia Labs</strong> for the <strong>Mistral Worldwide Hackathon 2026</strong> • Powered by Mistral AI
             </p>
           </div>
         </div>

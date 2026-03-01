@@ -50,15 +50,71 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
   }
 
   if (!analysis?.analysis) {
+    const status = analysis?.status || 'processing_ocr'
+    const steps = [
+      { id: 'processing_ocr', label: 'Extracting Text', description: 'OCR processing with Mistral' },
+      { id: 'processing_vision', label: 'Analyzing Figures', description: 'Vision analysis of images' },
+      { id: 'analyzing', label: 'AI Agents Working', description: '5 agents analyzing in parallel' },
+      { id: 'complete', label: 'Complete', description: 'Results ready' },
+    ]
+    const currentStepIdx = steps.findIndex(s => s.id === status)
+
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-        <div className="flex items-center gap-3 text-yellow-600">
-          <Clock className="w-6 h-6" />
-          <p className="font-medium">Analysis in progress</p>
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900">Processing your document...</p>
+            <p className="text-sm text-gray-500">This typically takes 30-60 seconds</p>
+          </div>
         </div>
-        <p className="text-yellow-600 mt-2">
-          Your paper is being processed. This typically takes 30-60 seconds.
-        </p>
+
+        <div className="space-y-3">
+          {steps.map((step, i) => {
+            const isActive = i === currentStepIdx
+            const isDone = i < currentStepIdx
+            const isPending = i > currentStepIdx
+
+            return (
+              <div
+                key={step.id}
+                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                  isActive ? 'bg-indigo-50 border border-indigo-200' :
+                  isDone ? 'bg-green-50 border border-green-200' :
+                  'bg-gray-50 border border-gray-100'
+                }`}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  isActive ? 'bg-indigo-600' :
+                  isDone ? 'bg-green-600' :
+                  'bg-gray-300'
+                }`}>
+                  {isDone ? (
+                    <CheckCircle className="w-4 h-4 text-white" />
+                  ) : isActive ? (
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span className="text-xs font-bold text-white">{i + 1}</span>
+                  )}
+                </div>
+                <div>
+                  <p className={`text-sm font-medium ${
+                    isActive ? 'text-indigo-900' :
+                    isDone ? 'text-green-800' :
+                    'text-gray-400'
+                  }`}>{step.label}</p>
+                  <p className={`text-xs ${
+                    isActive ? 'text-indigo-600' :
+                    isDone ? 'text-green-600' :
+                    'text-gray-400'
+                  }`}>{step.description}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     )
   }
