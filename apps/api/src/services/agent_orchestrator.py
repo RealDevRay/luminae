@@ -31,30 +31,34 @@ class AgentOrchestrator:
         total_tokens = 0
         cache_hits = 0
 
+        # Step 1: OCR (must complete first — everything depends on paper_text)
         ocr_result = await ocr_service.process_pdf(file_content, filename)
-        ocr_time = time.time() - start_time
 
         paper_text = ocr_result.get("text", "")
         figures = ocr_result.get("figures", [])
         tables = ocr_result.get("tables", [])
 
-        vision_analyses = []
-        if extract_figures and figures:
-            vision_analyses = await vision_service.analyze_figures(figures)
+        # Step 2: Run Vision + Methodology + Dataset in PARALLEL
+        # These 3 are independent of each other — they all only need paper_text
+        vision_task = self._run_vision(figures, extract_figures)
+        methodology_task = reasoning_service.analyze_methodology(paper_text, [])
+        dataset_task = reasoning_service.audit_dataset(paper_text)
 
-        methodology_critique = await reasoning_service.analyze_methodology(
-            paper_text, vision_analyses
+        vision_analyses, methodology_critique, dataset_audit = await asyncio.gather(
+            vision_task, methodology_task, dataset_task
         )
 
-        dataset_audit = await reasoning_service.audit_dataset(paper_text)
-
+        # Step 3: Experiments (depends on methodology + dataset)
         experiments = await reasoning_service.design_experiments(
             paper_text, methodology_critique, dataset_audit
         )
 
-        synthesis = await reasoning_service.synthesize(
+        # Step 4: Synthesis + Grant in PARALLEL (both depend on experiments)
+        synthesis_task = reasoning_service.synthesize(
             methodology_critique, dataset_audit, experiments
         )
+
+        synthesis = await synthesis_task
 
         grant_outline = {}
         if generate_grant:
@@ -94,6 +98,12 @@ class AgentOrchestrator:
                 "processing_time_seconds": int(processing_time),
             },
         }
+
+    async def _run_vision(self, figures: list, extract_figures: bool) -> list:
+        """Helper to run vision analysis, returns empty list if not needed."""
+        if extract_figures and figures:
+            return await vision_service.analyze_figures(figures)
+        return []
 
     def _extract_title(self, text: str) -> Optional[str]:
         lines = text.strip().split("\n")

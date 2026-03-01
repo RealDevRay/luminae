@@ -13,10 +13,16 @@ export function useUpload() {
 
     try {
       const arrayBuffer = await file.arrayBuffer()
-      const bytes = Array.from(new Uint8Array(arrayBuffer))
-      const hex = bytes.map(b => b.toString(16).padStart(2, '0')).join('')
+      const bytes = new Uint8Array(arrayBuffer)
+      // Use base64 encoding (33% overhead) instead of hex (100% overhead)
+      let binary = ''
+      const chunkSize = 8192
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+      }
+      const base64 = btoa(binary)
 
-      const response = await apiClient.analyze(hex, file.name, {
+      const response = await apiClient.analyze(base64, file.name, {
         extract_figures: true,
         generate_grant: true,
       })

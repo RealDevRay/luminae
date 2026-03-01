@@ -23,11 +23,16 @@ class BudgetProtection:
 
     async def get_redis(self) -> redis.Redis:
         if self._redis is None:
-            self._redis = redis.from_url(
-                settings.upstash_redis_rest_url,
-                password=settings.upstash_redis_rest_token,
-                decode_responses=True,
-            )
+            try:
+                self._redis = redis.from_url(
+                    settings.upstash_redis_rest_url,
+                    password=settings.upstash_redis_rest_token,
+                    decode_responses=True,
+                    socket_connect_timeout=3,
+                    socket_timeout=3,
+                )
+            except Exception:
+                return None
         return self._redis
 
     def estimate_cost(
@@ -48,8 +53,12 @@ class BudgetProtection:
 
     async def get_remaining_budget(self) -> float:
         try:
-            redis_client = await self.get_redis()
-            remaining = await redis_client.get("global:remaining_budget")
+            redis_client = await asyncio.wait_for(self.get_redis(), timeout=3)
+            if redis_client is None:
+                return settings.mistral_budget_usd
+            remaining = await asyncio.wait_for(
+                redis_client.get("global:remaining_budget"), timeout=3
+            )
             if remaining is None:
                 await redis_client.set(
                     "global:remaining_budget", str(settings.mistral_budget_usd)
@@ -67,8 +76,12 @@ class BudgetProtection:
 
     async def deduct_budget(self, amount: float) -> None:
         try:
-            redis_client = await self.get_redis()
-            await redis_client.decrbyfloat("global:remaining_budget", amount)
+            redis_client = await asyncio.wait_for(self.get_redis(), timeout=3)
+            if redis_client:
+                await asyncio.wait_for(
+                    redis_client.decrbyfloat("global:remaining_budget", amount),
+                    timeout=3,
+                )
         except Exception:
             pass
 
@@ -83,7 +96,9 @@ class BudgetProtection:
         actual_cost: float,
     ) -> None:
         try:
-            redis_client = await self.get_redis()
+            redis_client = await asyncio.wait_for(self.get_redis(), timeout=3)
+            if redis_client is None:
+                return
             log_key = f"usage:{paper_id}:{endpoint}:{model}"
             await redis_client.hset(log_key, mapping={
                 "paper_id": paper_id,
@@ -93,10 +108,9 @@ class BudgetProtection:
                 "output_tokens": str(output_tokens),
                 "estimated_cost": str(estimated_cost),
                 "actual_cost": str(actual_cost),
-                "timestamp": str(redis_client.time()[0]),
             })
             await redis_client.expire(log_key, 86400 * 7)
-            
+
             from ..utils.supabase_client import supabase
             if supabase:
                 try:
