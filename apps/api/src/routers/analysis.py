@@ -34,24 +34,50 @@ analysis_jobs: dict[str, AnalysisJob] = {}
 job_results: dict[str, dict] = {}
 
 
-async def run_analysis(job_id: str, file_content: bytes, filename: str, options: dict):
+async def run_analysis(job_id: str, request: AnalysisRequest, user_id: str):
     try:
+        if request.file_base64:
+            try:
+                # CPU Bound: offload hex/base64 processing
+                def decode_payload():
+                    try:
+                        return bytes.fromhex(request.file_base64)
+                    except ValueError:
+                        return base64.b64decode(request.file_base64)
+                file_content = await asyncio.to_thread(decode_payload)
+            except Exception as e:
+                # Stop if badly formatted
+                return
+        else:
+            return
+
+        file_hash = hashlib.sha256(file_content).hexdigest()
+        options = request.options.model_dump() if request.options else {}
+
         analysis_jobs[job_id] = AnalysisJob(
             job_id=job_id,
-            status="processing_ocr",
+            status="uploaded",
             check_status_url=f"/api/v1/status/{job_id}",
         )
+
         if supabase:
             try:
-                await asyncio.to_thread(
-                    lambda: supabase.table("papers").update({"status": "processing_ocr"}).eq("id", job_id).execute()
-                )
-            except Exception:
+                def save_initial():
+                    supabase.table("papers").insert({
+                        "id": job_id,
+                        "user_id": user_id,
+                        "filename": request.filename,
+                        "file_hash": file_hash,
+                        "status": "processing_ocr",
+                        "total_cost_usd": 0
+                    }).execute()
+                await asyncio.to_thread(save_initial)
+            except Exception as e:
                 pass
 
         result = await agent_orchestrator.analyze_paper(
             file_content=file_content,
-            filename=filename,
+            filename=request.filename,
             extract_figures=options.get("extract_figures", True),
             generate_grant=options.get("generate_grant", True),
         )
@@ -120,42 +146,8 @@ async def analyze_paper(request: AnalysisRequest, background_tasks: BackgroundTa
 
     job_id = str(uuid.uuid4())
 
-    if request.file_base64:
-        try:
-            file_content = bytes.fromhex(request.file_base64)
-        except ValueError:
-            file_content = base64.b64decode(request.file_base64)
-    else:
-        raise HTTPException(status_code=400, detail="file_url not yet implemented")
-
-    file_hash = hashlib.sha256(file_content).hexdigest()
-
-    options = request.options.model_dump() if request.options else {}
-    estimated_cost = 0.05
-
-    if not await budget_protection.check_request_budget(estimated_cost):
-        raise HTTPException(
-            status_code=402,
-            detail=f"Estimated cost ${estimated_cost} exceeds max request limit",
-        )
-
-    if supabase:
-        try:
-            def save_initial():
-                supabase.table("papers").insert({
-                    "id": job_id,
-                    "user_id": user_id,
-                    "filename": request.filename,
-                    "file_hash": file_hash,
-                    "status": "uploaded",
-                    "total_cost_usd": 0
-                }).execute()
-            await asyncio.to_thread(save_initial)
-        except Exception as e:
-            print(f"Initial insert error: {e}")
-
-    # Immediately push to background and return to prevent Vercel/Render connection drops
-    background_tasks.add_task(run_analysis, job_id, file_content, request.filename, options)
+    # Completely decouple processing so the API instantly returns
+    background_tasks.add_task(run_analysis, job_id, request, user_id)
 
     return AnalysisJob(
         job_id=job_id,
