@@ -71,7 +71,7 @@ class ReasoningService:
             "dataset_auditor": 1500,
             "experiment_designer": 2500,
             "synthesis_agent": 2000,
-            "grant_generator": 2500,
+            "grant_generator": 4000,
         }
 
     async def analyze_methodology(self, paper_text, figure_analyses):
@@ -133,6 +133,7 @@ Proposed experiments: {json.dumps(experiments)}"""
             messages=full_messages,
             max_tokens=max_tokens,
             temperature=0.7,
+            response_format={"type": "json_object"}
         )
 
         return response.get("choices", [{}])[0].get("message", {}).get("content", "")

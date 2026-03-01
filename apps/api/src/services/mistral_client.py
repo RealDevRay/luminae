@@ -21,14 +21,20 @@ class MistralClient:
         messages: list[dict],
         max_tokens: int = 2000,
         temperature: float = 0.7,
+        response_format: Optional[dict] = None,
     ) -> dict:
         client = self._get_client()
-        response = await client.chat.complete_async(
-            model=model,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+        
+        kwargs = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if response_format:
+            kwargs["response_format"] = response_format
+            
+        response = await client.chat.complete_async(**kwargs)
         return response.model_dump()
 
     async def ocr_document(
