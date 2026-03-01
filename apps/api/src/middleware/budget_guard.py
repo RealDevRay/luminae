@@ -24,12 +24,22 @@ class BudgetProtection:
     async def get_redis(self) -> redis.Redis:
         if self._redis is None:
             try:
+                url = settings.upstash_redis_rest_url
+                token = settings.upstash_redis_rest_token
+
+                # Embed password into URL if not already present
+                if token and "@" not in url:
+                    # Convert redis://host:port → redis://default:PASSWORD@host:port
+                    url = url.replace("redis://", f"redis://default:{token}@", 1)
+                    url = url.replace("rediss://", f"rediss://default:{token}@", 1)
+
+                use_ssl = url.startswith("rediss://")
                 self._redis = redis.from_url(
-                    settings.upstash_redis_rest_url,
-                    password=settings.upstash_redis_rest_token,
+                    url,
                     decode_responses=True,
                     socket_connect_timeout=3,
                     socket_timeout=3,
+                    ssl=use_ssl,
                 )
             except Exception:
                 return None
