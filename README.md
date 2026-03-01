@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/web/public/cover.png" alt="Luminae Cover Hero Image" width="100%" />
+</p>
+
 # Mistral Worldwide Hackathon: LUMINAE
 
 ### Autonomous Research Illumination System
@@ -10,11 +14,11 @@
 </p>
 
 <p align="center">
-  <a href="#demo">📺 Demo</a> •
+  <a href="https://luminae.qzz.io/">🌍 Live App</a> •
+  <a href="#demo">📺 YouTube Demo</a> •
   <a href="#features">✨ Features</a> •
   <a href="#architecture">🏗️ Architecture</a> •
-  <a href="#agents">🧠 AI Agents</a> •
-  <a href="#deployment">🚀 Deployment</a>
+  <a href="#agents">🧠 AI Agents</a>
 </p>
 
 ---
@@ -28,9 +32,15 @@
 
 ---
 
-## <a name="demo"></a>📺 Demo
+## <a name="demo"></a>🔗 LIVE LINKS & DEMO
 
-> **YouTube Demo (2 min)**: _[Link will be added]_
+> **🌍 Live Application**: [https://luminae.qzz.io/](https://luminae.qzz.io/)  
+> **📊 Analysis Dashboard**: [https://luminae.qzz.io/dashboard](https://luminae.qzz.io/dashboard)  
+> **📺 YouTube Demo (2 min)**: _[Placeholder: Link to YouTube video will be added here]_
+
+### 🧑‍⚖️ Note for Judges
+
+Luminae evaluates complex research papers using a **multi-agent reasoning swarm**. Instead of just summarizing, 5 specialized AI personas critique methodologies, audit datasets, and invent new experiments — all while remaining highly economical. We aggressively optimized our system to `ministral-8b-2512` and built a resilient API caching layer so we could process enormous PDFs at an average cost of **$0.05**, keeping us well within the hackathon budget.
 
 ---
 
