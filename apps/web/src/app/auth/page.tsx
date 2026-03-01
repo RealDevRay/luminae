@@ -13,7 +13,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, signInWithGoogle } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -155,12 +155,47 @@ export default function AuthPage() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or</span>
+              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={async () => {
+              setLoading(true)
+              try {
+                await signInWithGoogle()
+              } catch (err) {
+                setError('Google sign-in failed.')
+                setLoading(false)
+              }
+            }}
+            disabled={loading}
+            className="w-full py-3 px-4 bg-white dark:bg-zinc-900 border border-input text-foreground font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
+          >
+            <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
+              <path
+                d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.25027 6.60998L5.32028 9.76998C6.27528 6.83 8.86028 4.75 12.0003 4.75Z"
+                fill="#EA4335"
+              />
+              <path
+                d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L20.18 21.29C22.57 19.09 24 15.93 24 12.275H23.49Z"
+                fill="#4285F4"
+              />
+              <path
+                d="M5.26498 14.2949C5.02498 13.5699 4.88501 12.7999 4.88501 11.9999C4.88501 11.1999 5.01998 10.4299 5.26498 9.7049L1.275 6.40991C0.46 8.17991 0 10.0099 0 11.9999C0 13.9899 0.46 15.8199 1.28 17.5899L5.26498 14.2949Z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12.0004 24.0001C15.2404 24.0001 17.9654 22.935 20.0654 20.965L15.9604 17.785C14.8504 18.515 13.5604 18.98 12.0004 18.98C8.86038 18.98 6.27538 16.9 5.32038 13.96L1.25037 17.1201C3.25537 21.3101 7.31038 24.0001 12.0004 24.0001Z"
+                fill="#34A853"
+              />
+            </svg>
+            Continue with Google
+          </button>
 
           <div className="text-center text-sm">
             <span className="text-muted-foreground">
