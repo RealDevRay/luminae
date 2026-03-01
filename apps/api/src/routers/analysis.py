@@ -13,19 +13,22 @@ import asyncio
 settings = get_settings()
 
 router = APIRouter(prefix="/api/v1", tags=["analysis"])
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    if not credentials:
+        return "guest_user"
+        
     token = credentials.credentials
     if not supabase:
         return "development_user"
     try:
         user_res = supabase.auth.get_user(token)
         if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Invalid authentication token")
+            return "guest_user"
         return user_res.user.id
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Auth error: {str(e)}")
+        return "guest_user"
 
 analysis_jobs: dict[str, AnalysisJob] = {}
 job_results: dict[str, dict] = {}
