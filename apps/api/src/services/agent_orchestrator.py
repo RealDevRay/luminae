@@ -39,6 +39,8 @@ class AgentOrchestrator:
             filename=filename,
             extract_figures=extract_figures,
             generate_grant=generate_grant,
+            source_type="file_upload",
+            source_url=None,
         )
 
     async def analyze_paper_url(
@@ -56,6 +58,8 @@ class AgentOrchestrator:
             filename=filename,
             extract_figures=extract_figures,
             generate_grant=generate_grant,
+            source_type="url",
+            source_url=url,
         )
 
     async def _run_pipeline(
@@ -64,6 +68,8 @@ class AgentOrchestrator:
         filename: str,
         extract_figures: bool = True,
         generate_grant: bool = True,
+        source_type: str = "file_upload",
+        source_url: str = None,
     ) -> dict:
         """Core analysis pipeline shared by file upload and URL paths."""
         start_time = time.time()
@@ -74,6 +80,33 @@ class AgentOrchestrator:
         paper_text = ocr_result.get("text", "")
         figures = ocr_result.get("figures", [])
         tables = ocr_result.get("tables", [])
+
+        # Detect HTML content (auth-walled URLs return login pages)
+        if self._is_html_content(paper_text):
+            processing_time = time.time() - start_time
+            return {
+                "paper_id": paper_id,
+                "metadata": {
+                    "title": filename,
+                    "authors": [],
+                    "abstract": "",
+                    "upload_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "processing_duration_ms": int(processing_time * 1000),
+                    "source_type": source_type,
+                    "source_url": source_url,
+                },
+                "error": "The URL appears to be behind authentication. Luminae received an HTML login page instead of a document. Please use a publicly accessible URL or upload the file directly.",
+                "extraction": {"ocr_text": "", "figures": [], "tables": []},
+                "critique": {"methodology": {}, "dataset": {}},
+                "improvements": {"experiments": [], "key_insights": []},
+                "grant_outline": {},
+                "economics": {
+                    "total_tokens_used": 0,
+                    "estimated_cost_usd": 0.01,
+                    "cache_hits": 0,
+                    "processing_time_seconds": int(processing_time),
+                },
+            }
 
         # Step 2: Run Vision + Methodology + Dataset in PARALLEL
         vision_task = self._run_vision(figures, extract_figures)
@@ -110,6 +143,8 @@ class AgentOrchestrator:
                 "abstract": self._extract_abstract(paper_text),
                 "upload_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "processing_duration_ms": int(processing_time * 1000),
+                "source_type": source_type,
+                "source_url": source_url,
             },
             "extraction": {
                 "ocr_text": paper_text,
@@ -140,13 +175,31 @@ class AgentOrchestrator:
         return []
 
     def _extract_title(self, text: str) -> Optional[str]:
+        """Extract title from OCR text, filtering out HTML and metadata lines."""
         lines = text.strip().split("\n")
-        for line in lines[:5]:
+        html_indicators = ["<!doctype", "<html", "<head", "<body", "<meta", "<script", "<link", "<style", "<div"]
+        for line in lines[:10]:
             line = line.strip()
-            if line and len(line) > 10 and len(line) < 200:
-                if not line.startswith("#"):
-                    return line
+            if not line or len(line) < 5 or len(line) > 200:
+                continue
+            lower = line.lower()
+            # Skip HTML tags and common metadata
+            if any(lower.startswith(ind) for ind in html_indicators):
+                continue
+            if line.startswith("#"):
+                # Markdown header — strip # and use as title
+                return line.lstrip("# ").strip()
+            return line
         return None
+
+    def _is_html_content(self, text: str) -> bool:
+        """Detect if OCR returned HTML instead of document content."""
+        if not text:
+            return False
+        lower = text[:500].lower().strip()
+        html_signals = ["<!doctype html", "<html", "<head>", "<meta ", "<script", "<body"]
+        count = sum(1 for s in html_signals if s in lower)
+        return count >= 2
 
     def _extract_abstract(self, text: str) -> str:
         lines = text.strip().split("\n")

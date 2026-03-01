@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FileText, Brain, Lightbulb, DollarSign, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
+import { FileText, Brain, Lightbulb, DollarSign, Clock, AlertTriangle, CheckCircle, XCircle, Link, Upload } from 'lucide-react'
 import { useAnalysis } from '@/hooks/useAnalysis'
 import { formatCurrency, formatTime } from '@/lib/utils'
 import { FormattedText, FormattedList, toTitleCase } from '@/components/ui/FormattedText'
@@ -106,12 +106,42 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
             <div className="space-y-6">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {data.metadata?.title || 'Untitled Paper'}
+                  {data.metadata?.title || 'Untitled Document'}
                 </h1>
-                <p className="text-gray-500 mt-1">
-                  Uploaded: {new Date(data.metadata?.upload_timestamp).toLocaleString()}
-                </p>
+                <div className="flex items-center gap-3 mt-2">
+                  <p className="text-gray-500">
+                    Uploaded: {new Date(data.metadata?.upload_timestamp).toLocaleString()}
+                  </p>
+                  {data.metadata?.source_type === 'url' && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                      <Link className="w-3 h-3" />
+                      URL
+                    </span>
+                  )}
+                  {data.metadata?.source_type === 'file_upload' && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                      <Upload className="w-3 h-3" />
+                      File Upload
+                    </span>
+                  )}
+                </div>
+                {data.metadata?.source_url && (
+                  <p className="text-sm text-gray-400 mt-1 truncate max-w-xl" title={data.metadata.source_url}>
+                    Source: {data.metadata.source_url}
+                  </p>
+                )}
               </div>
+
+              {/* Analysis error (e.g. auth-walled URL) */}
+              {data.error && (
+                <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-red-800">Analysis Issue</p>
+                    <p className="text-red-700 text-sm mt-1">{data.error}</p>
+                  </div>
+                </div>
+              )}
 
               {data.metadata?.abstract && (
                 <div>

@@ -220,6 +220,13 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
                 )}
               </button>
             </div>
+
+            <div className="flex items-start gap-2 mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-amber-700">
+                URL must be <strong>publicly accessible</strong>. Links behind login pages (e.g. Moodle, private Google Drive) will not work — upload the file directly instead.
+              </p>
+            </div>
           </div>
         </form>
       )}
