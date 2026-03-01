@@ -17,8 +17,11 @@ import os as _os
 
 @app.on_event("startup")
 async def validate_config():
+    # Copy LUMINAE_ prefixed vars to SDK-expected names
     api_key = _os.getenv("LUMINAE_MISTRAL_API_KEY", "")
     if api_key:
+        # Set MISTRAL_API_KEY so the SDK finds it natively
+        _os.environ["MISTRAL_API_KEY"] = api_key
         print(f"✅ Mistral API key loaded ({len(api_key)} chars)")
     else:
         print("❌ WARNING: LUMINAE_MISTRAL_API_KEY is empty! OCR/Analysis will fail.")
