@@ -144,6 +144,13 @@ async def analyze_paper(request: AnalysisRequest, background_tasks: BackgroundTa
     if not request.file_base64 and not request.file_url:
         raise HTTPException(status_code=400, detail="Either file_base64 or file_url required")
 
+    estimated_cost = 0.05
+    if not await budget_protection.check_request_budget(estimated_cost):
+        raise HTTPException(
+            status_code=402,
+            detail=f"Estimated cost ${estimated_cost} exceeds max request limit",
+        )
+
     job_id = str(uuid.uuid4())
 
     # Completely decouple processing so the API instantly returns
