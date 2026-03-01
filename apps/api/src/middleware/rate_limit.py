@@ -55,6 +55,9 @@ rate_limiter = RateLimiter()
 
 
 async def rate_limit_middleware(request: Request, call_next):
+    if request.url.path == "/health":
+        return await call_next(request)
+
     if not await rate_limiter.check_rate_limit(request):
         raise HTTPException(
             status_code=429,
