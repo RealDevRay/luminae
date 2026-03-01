@@ -91,26 +91,49 @@ export default function DashboardPage() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-background border border-border rounded-2xl p-6">
-              <h2 className="text-lg font-semibold mb-4">
-                Upload Document
+        {!currentJobId ? (
+          <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-background border border-border rounded-2xl p-8 shadow-sm">
+              <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
+                Upload Document for Analysis
               </h2>
               <UploadZone onAnalysisComplete={setCurrentJobId} isGuestMode={isGuestMode} />
             </div>
-
-            {currentJobId && (
-              <div className="bg-background border border-border rounded-2xl p-6">
-                <AnalysisDashboard jobId={currentJobId} />
+            
+            {!isGuestMode && (
+              <div className="w-full">
+                <AnalysisList isGuestMode={isGuestMode} />
               </div>
             )}
           </div>
+        ) : (
+          <div className="flex flex-col xl:flex-row gap-8 animate-in fade-in duration-500">
+            {/* Left/Main Column - Analysis Results (Wider) */}
+            <div className="flex-1 min-w-0">
+              <div className="bg-background border border-border rounded-2xl p-6 shadow-sm">
+                <AnalysisDashboard jobId={currentJobId} />
+              </div>
+            </div>
 
-          <div className="space-y-6">
-            <AnalysisList isGuestMode={isGuestMode} />
+            {/* Right Sidebar - Upload New & History (Sticky) */}
+            <div className="xl:w-[400px] flex-shrink-0 space-y-6">
+              <div className="bg-background border border-border rounded-2xl p-6 shadow-sm sticky top-24">
+                <h2 className="text-lg font-semibold mb-4 text-foreground">
+                  Analyze Another Document
+                </h2>
+                <div className="scale-95 origin-top">
+                  <UploadZone onAnalysisComplete={setCurrentJobId} isGuestMode={isGuestMode} />
+                </div>
+                
+                {!isGuestMode && (
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <AnalysisList isGuestMode={isGuestMode} />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </main>
 
       <Chatbot />
