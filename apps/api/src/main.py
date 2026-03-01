@@ -1,6 +1,14 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import os
+
+# CRITICAL: Copy LUMINAE_MISTRAL_API_KEY to MISTRAL_API_KEY BEFORE any SDK imports
+# The Mistral SDK reads MISTRAL_API_KEY from environment internally
+_api_key = os.getenv("LUMINAE_MISTRAL_API_KEY", "")
+if _api_key:
+    os.environ["MISTRAL_API_KEY"] = _api_key
+
 from .routers import analysis, health
 from .middleware.rate_limit import rate_limit_middleware
 from .config import get_settings
