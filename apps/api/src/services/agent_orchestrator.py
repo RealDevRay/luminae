@@ -2,7 +2,7 @@ import uuid
 import time
 import asyncio
 from typing import Optional
-from .ocr_service import ocr_service
+from .ocr_service import ocr_service, get_document_type
 from .vision_service import vision_service
 from .reasoning_service import reasoning_service
 from ..middleware.budget_guard import budget_protection
@@ -26,20 +26,56 @@ class AgentOrchestrator:
         extract_figures: bool = True,
         generate_grant: bool = True,
     ) -> dict:
+        """Process an uploaded file (auto-detects PDF vs image from extension)."""
+        doc_type = get_document_type(filename)
+
+        if doc_type == "image":
+            ocr_result = await ocr_service.process_image(file_content, filename)
+        else:
+            ocr_result = await ocr_service.process_pdf(file_content, filename)
+
+        return await self._run_pipeline(
+            ocr_result=ocr_result,
+            filename=filename,
+            extract_figures=extract_figures,
+            generate_grant=generate_grant,
+        )
+
+    async def analyze_paper_url(
+        self,
+        url: str,
+        filename: str,
+        extract_figures: bool = True,
+        generate_grant: bool = True,
+    ) -> dict:
+        """Process a document via public URL — no upload needed."""
+        ocr_result = await ocr_service.process_url(url, filename)
+
+        return await self._run_pipeline(
+            ocr_result=ocr_result,
+            filename=filename,
+            extract_figures=extract_figures,
+            generate_grant=generate_grant,
+        )
+
+    async def _run_pipeline(
+        self,
+        ocr_result: dict,
+        filename: str,
+        extract_figures: bool = True,
+        generate_grant: bool = True,
+    ) -> dict:
+        """Core analysis pipeline shared by file upload and URL paths."""
         start_time = time.time()
         paper_id = str(uuid.uuid4())
         total_tokens = 0
         cache_hits = 0
-
-        # Step 1: OCR (must complete first — everything depends on paper_text)
-        ocr_result = await ocr_service.process_pdf(file_content, filename)
 
         paper_text = ocr_result.get("text", "")
         figures = ocr_result.get("figures", [])
         tables = ocr_result.get("tables", [])
 
         # Step 2: Run Vision + Methodology + Dataset in PARALLEL
-        # These 3 are independent of each other — they all only need paper_text
         vision_task = self._run_vision(figures, extract_figures)
         methodology_task = reasoning_service.analyze_methodology(paper_text, [])
         dataset_task = reasoning_service.audit_dataset(paper_text)
@@ -53,12 +89,10 @@ class AgentOrchestrator:
             paper_text, methodology_critique, dataset_audit
         )
 
-        # Step 4: Synthesis + Grant in PARALLEL (both depend on experiments)
-        synthesis_task = reasoning_service.synthesize(
+        # Step 4: Synthesis + Grant
+        synthesis = await reasoning_service.synthesize(
             methodology_critique, dataset_audit, experiments
         )
-
-        synthesis = await synthesis_task
 
         grant_outline = {}
         if generate_grant:

@@ -43,6 +43,37 @@ export function useUpload() {
   return { uploadFile, isUploading, error }
 }
 
+export function useUploadUrl() {
+  const [isUploading, setIsUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { setCurrentJob, setStatus } = useAnalysisStore()
+
+  const uploadUrl = useCallback(async (url: string, filename: string) => {
+    setIsUploading(true)
+    setError(null)
+
+    try {
+      const response = await apiClient.analyzeUrl(url, filename, {
+        extract_figures: true,
+        generate_grant: true,
+      })
+
+      setCurrentJob(response.job_id)
+      setStatus('processing_ocr')
+
+      return response
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'URL analysis failed'
+      setError(message)
+      throw err
+    } finally {
+      setIsUploading(false)
+    }
+  }, [setCurrentJob, setStatus])
+
+  return { uploadUrl, isUploading, error }
+}
+
 export function useAnalysis(jobId: string) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

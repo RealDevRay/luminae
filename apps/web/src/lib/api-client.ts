@@ -79,9 +79,28 @@ class ApiClient {
   ): Promise<AnalysisJob> {
     return this.request('/api/v1/analyze', {
       method: 'POST',
-      timeoutMs: 180000, // Allow up to 3 minutes for slow residential uploads
+      timeoutMs: 180000,
       body: JSON.stringify({
         file_base64: fileBase64,
+        filename,
+        options,
+      }),
+    })
+  }
+
+  async analyzeUrl(
+    fileUrl: string,
+    filename: string,
+    options?: {
+      extract_figures?: boolean
+      generate_grant?: boolean
+    }
+  ): Promise<AnalysisJob> {
+    return this.request('/api/v1/analyze', {
+      method: 'POST',
+      timeoutMs: 180000,
+      body: JSON.stringify({
+        file_url: fileUrl,
         filename,
         options,
       }),

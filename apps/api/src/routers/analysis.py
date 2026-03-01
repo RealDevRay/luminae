@@ -1,10 +1,12 @@
 import uuid
+import os
 import base64
 import hashlib
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from ..models.schemas import AnalysisRequest, AnalysisJob, BudgetInfo
 from ..services.agent_orchestrator import agent_orchestrator
+from ..services.ocr_service import get_document_type
 from ..middleware.budget_guard import budget_protection
 from ..config import get_settings
 from ..utils.supabase_client import supabase
@@ -36,23 +38,27 @@ job_results: dict[str, dict] = {}
 
 async def run_analysis(job_id: str, request: AnalysisRequest, user_id: str):
     try:
-        if request.file_base64:
-            try:
-                # CPU Bound: offload hex/base64 processing
-                def decode_payload():
-                    try:
-                        return bytes.fromhex(request.file_base64)
-                    except ValueError:
-                        return base64.b64decode(request.file_base64)
-                file_content = await asyncio.to_thread(decode_payload)
-            except Exception as e:
-                # Stop if badly formatted
-                return
-        else:
-            return
-
-        file_hash = hashlib.sha256(file_content).hexdigest()
         options = request.options.model_dump() if request.options else {}
+        is_url_mode = bool(request.file_url and not request.file_base64)
+
+        if is_url_mode:
+            # URL mode: pass URL directly to Mistral OCR — no upload needed
+            file_hash = hashlib.sha256(request.file_url.encode()).hexdigest()
+        else:
+            # File upload mode: decode base64/hex payload
+            if request.file_base64:
+                try:
+                    def decode_payload():
+                        try:
+                            return bytes.fromhex(request.file_base64)
+                        except ValueError:
+                            return base64.b64decode(request.file_base64)
+                    file_content = await asyncio.to_thread(decode_payload)
+                except Exception as e:
+                    return
+            else:
+                return
+            file_hash = hashlib.sha256(file_content).hexdigest()
 
         analysis_jobs[job_id] = AnalysisJob(
             job_id=job_id,
@@ -75,12 +81,20 @@ async def run_analysis(job_id: str, request: AnalysisRequest, user_id: str):
             except Exception as e:
                 pass
 
-        result = await agent_orchestrator.analyze_paper(
-            file_content=file_content,
-            filename=request.filename,
-            extract_figures=options.get("extract_figures", True),
-            generate_grant=options.get("generate_grant", True),
-        )
+        if is_url_mode:
+            result = await agent_orchestrator.analyze_paper_url(
+                url=request.file_url,
+                filename=request.filename,
+                extract_figures=options.get("extract_figures", True),
+                generate_grant=options.get("generate_grant", True),
+            )
+        else:
+            result = await agent_orchestrator.analyze_paper(
+                file_content=file_content,
+                filename=request.filename,
+                extract_figures=options.get("extract_figures", True),
+                generate_grant=options.get("generate_grant", True),
+            )
 
         job_results[job_id] = result
         analysis_jobs[job_id] = AnalysisJob(

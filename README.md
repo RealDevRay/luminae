@@ -1,151 +1,224 @@
-# Mistral Worldwide Hackathon: LUMINAE
+<p align="center">
+  <img src="apps/web/public/luminae-logo.png" alt="Luminae" width="120" />
+</p>
 
-### Autonomous Research Illumination System
+<h1 align="center">Luminae</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/MISTRAL%20AI-DEVELOPER-F97316?style=for-the-badge&logo=mistral&logoColor=white" alt="Mistral AI Developer Badge" />
-  <img src="https://img.shields.io/badge/MODEL-ministral--8b--2512-black?style=for-the-badge" alt="ministral-8b" />
-  <img src="https://img.shields.io/badge/MODEL-ministral--3b--2512-black?style=for-the-badge" alt="ministral-3b" />
-  <img src="https://img.shields.io/badge/MODEL-mistral--ocr--latest-black?style=for-the-badge" alt="mistral-ocr" />
+  <strong>Autonomous Research Illumination System</strong><br/>
+  Transform academic papers into actionable intelligence with a multi-agent AI pipeline
+</p>
+
+<p align="center">
+  <a href="#demo">📺 Demo</a> •
+  <a href="#features">✨ Features</a> •
+  <a href="#architecture">🏗️ Architecture</a> •
+  <a href="#models">🤖 Models</a> •
+  <a href="#agents">🧠 AI Agents</a> •
+  <a href="#getting-started">🚀 Getting Started</a>
 </p>
 
 ---
 
-## 🚀 HACKATHON TRACK OVERVIEW
+## 🏆 Mistral AI Hackathon — Mistral Vibe Track
 
-**Track:** `2) Anything goes`  
-**Description:** _Use Mistral models through the API or OSS tools to create the best demos._
+> **Track**: _Anything Goes — Use any Mistral model to create the best project_
 
-**Demo Duration:** 2 minutes  
-**Team Size:** 1-4 participants
+Luminae is built for the **Mistral Vibe** hackathon track, showcasing what's possible when you orchestrate multiple Mistral models into a unified research analysis platform. We use **5 specialized AI agents** powered by **Ministrals (3B/8B)** and **Mistral OCR** to deliver deep paper analysis at just ~$0.05 per paper — all within a $15 budget.
 
----
+## <a name="demo"></a>📺 Demo
 
-## 1. EXECUTIVE SUMMARY
+> **YouTube Demo (2 min)**: _[Link will be added]_
 
-**Luminae** is an autonomous research analysis platform that transforms academic papers into actionable intelligence. Using Mistral AI's multimodal capabilities, it performs deep critique, identifies methodological flaws, proposes novel experiments, and generates grant proposals—all within a strict $15 API budget through intelligent caching and cost optimization.
+## <a name="features"></a>✨ What Luminae Does
 
----
+Upload any academic paper (or paste a URL) and Luminae's AI agents deliver:
 
-## 2. CORE VALUE PROPOSITION
+| Feature                     | What You Get                                                                      |
+| --------------------------- | --------------------------------------------------------------------------------- |
+| 🔍 **OCR & Extraction**     | Full text, figures, and tables extracted from PDFs, DOCX, PPTX, and images        |
+| 🧬 **Methodology Critique** | Design flaws, statistical power issues, reproducibility gaps — severity-rated     |
+| 📊 **Dataset Audit**        | Bias detection, missing data assessment, representation analysis                  |
+| 🧪 **Experiment Design**    | 3 follow-up experiments with hypotheses, methods, feasibility scores, and budgets |
+| 📝 **Grant Proposal**       | NSF-style grant outline with specific aims, research strategy, and timeline       |
+| 💡 **Synthesis**            | Cross-agent insights that would surprise the original authors                     |
+| 💰 **Cost Tracking**        | Real-time budget monitoring with per-paper cost breakdown                         |
+| 🔗 **URL Input**            | Paste any public document URL — no upload needed                                  |
+| 💬 **Built-in Assistant**   | FAQ chatbot for platform guidance                                                 |
 
-| Problem                                                    | Luminae Solution                                                              |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Reading 50 papers for literature review takes weeks        | Complete analysis in 3 minutes                                                |
-| Identifying methodological flaws requires domain expertise | AI critic with structured severity ratings                                    |
-| Designing follow-up experiments is cognitively expensive   | 3 novel experiments auto-generated                                            |
-| Grant writing is time-consuming                            | NSF/NIH-style outline in seconds                                              |
-| Research tools cost $100s/month                            | $15 API budget handles 18 full analyses (Optimized to ~$0.03-$0.82 per paper) |
+### Supported Document Formats
 
----
+| Method          | Formats                                               |
+| --------------- | ----------------------------------------------------- |
+| **File Upload** | PDF, DOCX, PPTX, PNG, JPG, AVIF, WebP                 |
+| **URL Input**   | Any public URL to the above formats (e.g. arXiv PDFs) |
 
-## 3. MISTRAL AI CAPABILITIES UTILIZED
+## <a name="architecture"></a>🏗️ Architecture
 
-### 3.1 Full Capability Matrix
-
-| Capability              | Model                              | Use Case                                          | Cost Control                                         |
-| ----------------------- | ---------------------------------- | ------------------------------------------------- | ---------------------------------------------------- |
-| **Document OCR**        | `mistral-ocr-latest`               | PDF text extraction with structure preservation   | 24h Redis cache, SHA256 deduplication                |
-| **Vision Analysis**     | `ministral-3b-2512` (fallback: 8B) | Figure extraction and interpretation              | Batch 5 figures/call, confidence threshold 0.7       |
-| **Reasoning**           | `ministral-8b-2512`                | Methodology critique, synthesis, grant generation | Token estimation pre-flight, circuit breaker guard   |
-| **Agent Orchestration** | `ministral-8b-2512`                | Multi-agent workflow management                   | Parallel execution with semaphore (max 3 concurrent) |
-| **Structured Outputs**  | All models                         | JSON schemas for type-safe responses              | Validation retry (max 2x), Pydantic enforcement      |
-| **Document Library**    | Supabase                           | Caching previous analyses                         | Database persistence, infinite TTL                   |
-
-_Note: Initially designed with `magistral-medium-latest` and `mistral-large-latest`, the models were aggressively optimized to `ministral-8b-2512` to guarantee high volume paper processing without breaking the $15.00 hackathon budget._
-
----
-
-## 4. SYSTEM ARCHITECTURE
-
-### 4.1 Technology Stack
-
-- **Frontend**: Next.js 16.1 (App Router), TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, Zustand
-- **Backend**: FastAPI, Python 3.11, Pydantic, HTTPX
-- **Database & Auth**: Supabase (PostgreSQL, Row Level Security)
-- **Cache & Rate Limiting**: Redis (Upstash / Redis Cloud)
-- **AI Layer**: Mistral AI APIs with Budget Protection Middleware
-
-### 4.2 Monorepo Structure (Turborepo)
-
-```text
-/luminae
-├── apps/
-│   ├── api/                   # FastAPI Backend (Python)
-│   └── web/                   # Next.js Frontend (React)
-├── packages/
-│   ├── mistral-client/        # Shared Mistral Client wrapper
-│   ├── types/                 # Shared TypeScript interfaces
-│   └── ui/                    # Shared UI Components
-├── schema.sql                 # Supabase Database Schema
-├── turbo.json                 # Turborepo configuration
-└── vercel.json                # Vercel Deployment configuration
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    LUMINAE ARCHITECTURE                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│   ┌──────────────┐         ┌──────────────────────────┐     │
+│   │  Next.js 16  │ ──API── │  FastAPI (Python 3.11)   │     │
+│   │  Frontend    │         │  Backend                  │     │
+│   │  (Vercel)    │         │  (Render)                 │     │
+│   └──────────────┘         └──────────┬───────────────┘     │
+│                                       │                      │
+│                          ┌────────────┴────────────┐        │
+│                          │   Agent Orchestrator     │        │
+│                          └────────────┬────────────┘        │
+│                                       │                      │
+│           ┌───────────────────────────┼──────────┐          │
+│           ▼                           ▼          ▼          │
+│   ┌──────────────┐  ┌────────────────────────────────┐     │
+│   │  Mistral OCR │  │      5 Reasoning Agents         │     │
+│   │  (Step 1)    │  │  ┌─────────┐ ┌──────────┐      │     │
+│   └──────┬───────┘  │  │Method.  │ │ Dataset  │      │     │
+│          │          │  │ Critic  │ │ Auditor  │      │     │
+│          ▼          │  └────┬────┘ └────┬─────┘      │     │
+│   ┌──────────────┐  │       └────┬──────┘            │     │
+│   │ Vision (3B)  │  │            ▼                    │     │
+│   │  (Step 2)    │  │  ┌──────────────┐              │     │
+│   └──────────────┘  │  │  Experiment  │              │     │
+│                     │  │  Designer    │              │     │
+│                     │  └──────┬───────┘              │     │
+│                     │         ▼                       │     │
+│                     │  ┌───────────┐ ┌────────────┐  │     │
+│                     │  │ Synthesis │ │   Grant    │  │     │
+│                     │  │   Agent   │ │ Generator  │  │     │
+│                     │  └───────────┘ └────────────┘  │     │
+│                     └────────────────────────────────┘     │
+│                                                              │
+│   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│   │  Supabase    │  │    Redis     │  │   Budget     │     │
+│   │  (Auth + DB) │  │  (Tracking)  │  │  Protection  │     │
+│   └──────────────┘  └──────────────┘  └──────────────┘     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
+**Processing Pipeline** (Steps 2a/2b/2c run in parallel via `asyncio.gather`):
+
+```
+Step 1: OCR  →  Step 2a: Vision Analysis     ┐
+                Step 2b: Methodology Critique  ├→  Step 3: Experiments  →  Step 4: Synthesis  →  Step 5: Grant
+                Step 2c: Dataset Audit        ┘
+```
+
+## <a name="models"></a>🤖 Mistral Models Used
+
+| Model                    | Purpose                              | Why This Model                                                      |
+| ------------------------ | ------------------------------------ | ------------------------------------------------------------------- |
+| **`mistral-ocr-latest`** | Document OCR — text, figures, tables | Best-in-class document understanding                                |
+| **`ministral-3b-2512`**  | Figure/vision analysis               | Ultra-fast, cost-efficient for image tasks                          |
+| **`ministral-8b-2512`**  | All 5 reasoning agents               | Optimal balance of intelligence and cost for structured JSON output |
+
+> All models are from the **recommended Ministrals family** for the hackathon. We chose cost-optimized models to maximize the number of papers we can analyze within the $15 budget.
+
+**Cost per paper**: ~$0.05 → **~300 papers** possible on a $15 budget
+
+## <a name="agents"></a>🧠 AI Agents
+
+Luminae uses **5 specialized AI agents**, each with a unique persona and expertise:
+
+| Agent                      | Persona                                      | Role                                                                                       |
+| -------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 🔬 **Methodology Critic**  | Dr. Elena Vasquez — 20yr peer review veteran | Identifies design flaws, statistical power issues, reproducibility gaps, validity threats  |
+| 📊 **Dataset Auditor**     | Dr. James Chen — Data governance expert      | Audits dataset size, bias sources, missing data handling, ethical concerns, representation |
+| 🧪 **Experiment Designer** | Dr. Sarah Okonkwo — Creative experimentalist | Designs 3 bold follow-up experiments with hypotheses, methods, feasibility scores          |
+| 🔗 **Synthesis Agent**     | Cross-agent synthesizer                      | Resolves conflicts between agents, generates 3 surprising key insights                     |
+| 📝 **Grant Generator**     | NSF proposal specialist                      | Creates complete grant outline: specific aims, research strategy, timeline, budget         |
+
+Each agent outputs **strict JSON** for structured, parseable results displayed in a tabbed dashboard.
+
+## <a name="getting-started"></a>🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ & pnpm
+- Python 3.11+
+- Mistral API key ([get one here](https://console.mistral.ai/))
+- Supabase project ([create one](https://supabase.com))
+
+### Quick Start
+
+```bash
+# Clone
+git clone https://github.com/RealDevRay/luminae.git
+cd luminae
+
+# Install dependencies
+pnpm install
+cd apps/api && pip install -r requirements.txt && cd ../..
+
+# Set up environment
+cp .env.example .env
+# Add your LUMINAE_MISTRAL_API_KEY, Supabase keys, etc.
+
+# Run the database schema
+# Paste schema.sql into your Supabase SQL editor
+
+# Start development
+pnpm dev              # Frontend on :3000
+cd apps/api && uvicorn src.main:app --reload  # API on :8000
+```
+
+### Docker (Local Dev)
+
+```bash
+docker-compose -f infra/docker-compose.yml up
+```
+
+### Environment Variables
+
+| Variable                           | Required | Description               |
+| ---------------------------------- | -------- | ------------------------- |
+| `LUMINAE_MISTRAL_API_KEY`          | ✅       | Mistral AI API key        |
+| `LUMINAE_SUPABASE_URL`             | ✅       | Supabase project URL      |
+| `LUMINAE_SUPABASE_SERVICE_KEY`     | ✅       | Supabase service role key |
+| `LUMINAE_UPSTASH_REDIS_REST_URL`   | ✅       | Redis/Upstash URL         |
+| `LUMINAE_UPSTASH_REDIS_REST_TOKEN` | ✅       | Redis auth token          |
+| `LUMINAE_MISTRAL_BUDGET_USD`       | Optional | Budget cap (default: $15) |
+| `NEXT_PUBLIC_API_URL`              | ✅       | Backend URL for frontend  |
+| `NEXT_PUBLIC_SUPABASE_URL`         | ✅       | Client-side Supabase URL  |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`    | ✅       | Client-side Supabase key  |
+
+## 🛡️ Budget Protection
+
+3-layer cost protection ensures we never exceed the $15 budget:
+
+1. **Pre-flight estimation** — Rejects requests estimated > $0.50
+2. **Global circuit breaker** — Halts all processing if remaining budget < $2.00 (Redis-backed)
+3. **Usage logging** — Every API call logged to Redis (7-day TTL) + Supabase for audit
+
+## 🌐 Deployment
+
+| Component    | Platform      | Why                                           |
+| ------------ | ------------- | --------------------------------------------- |
+| **Frontend** | Vercel        | Edge-optimized Next.js hosting                |
+| **Backend**  | Render        | Supports long-running tasks (30-90s analysis) |
+| **Database** | Supabase      | PostgreSQL + Auth + Row Level Security        |
+| **Cache**    | Upstash Redis | Serverless Redis for budget tracking          |
+
+## 📁 Tech Stack
+
+| Layer    | Technology                                                      |
+| -------- | --------------------------------------------------------------- |
+| Frontend | Next.js 16.1, TypeScript, Tailwind CSS, Zustand, TanStack Query |
+| Backend  | FastAPI, Python 3.11, Pydantic, asyncio                         |
+| AI       | Mistral OCR, Ministral 3B/8B, structured JSON output            |
+| Database | Supabase (PostgreSQL + RLS)                                     |
+| Cache    | Redis / Upstash                                                 |
+| Monorepo | Turborepo + pnpm workspaces                                     |
+
+## 📄 License
+
+MIT
+
 ---
 
-## 5. FEATURE SPECIFICATIONS
-
-| Feature                  | Description                                     | Technical Implementation                         |
-| ------------------------ | ----------------------------------------------- | ------------------------------------------------ |
-| **Smart Ingestion**      | PDF upload with OCR and vision                  | `mistral-ocr-latest` + `ministral-3b-2512`       |
-| **Methodology Critique** | Identifies design flaws, statistical issues     | Reasoning agent with structured severity ratings |
-| **Dataset Audit**        | Evaluates size, bias, ethics                    | Parallel agent with governance focus             |
-| **Experiment Designer**  | Proposes 3 novel follow-ups                     | Creative agent with feasibility scoring          |
-| **Synthesis Engine**     | Combines all critiques into coherent assessment | Reasoning model with conflict resolution         |
-| **Grant Generator**      | NSF/NIH-style proposal outline                  | Structured output with specific aims             |
-| **Budget Dashboard**     | Real-time API cost tracking                     | Middleware + Supabase logging                    |
-
----
-
-## 6. DEPLOYMENT GUIDE
-
-The project is structured to deploy the Frontend and Backend separately. We use **Render** for the Python API because Vercel/Next.js Serverless Functions time out after 10-15 seconds (severely interrupting Mistral AI's 60-second background agent orchestration calls).
-
-### 6.1 Backend (Render)
-
-1. In Render, create a new **Web Service**.
-2. Connect it to this GitHub repository.
-3. Configure the following build settings:
-   - Root Directory: `apps/api`
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `uvicorn src.main:app --host 0.0.0.0 --port $PORT`
-4. Supply your `Environment Variables`:
-   - `LUMINAE_MISTRAL_API_KEY`: Your Mistral API Key
-   - `LUMINAE_SUPABASE_URL`: Your Supabase Project URL (`https://...supabase.co`)
-   - `LUMINAE_SUPABASE_SERVICE_KEY`: Your Supabase `service_role` secret key
-   - `LUMINAE_UPSTASH_REDIS_REST_URL`: Your Upstash or Redis Cloud URL (`redis://...`)
-   - `LUMINAE_UPSTASH_REDIS_REST_TOKEN`: Your Redis password/token
-   - `LUMINAE_MISTRAL_BUDGET_USD`: `15.00`
-   - `LUMINAE_MAX_REQUEST_USD`: `0.50`
-   - `LUMINAE_CIRCUIT_BREAKER_THRESHOLD`: `2.00`
-   - `LUMINAE_DEMO_MODE`: `false`
-
-### 6.2 Frontend (Vercel)
-
-1. Import this repository in Vercel.
-2. Under Project Settings -> General:
-   - Framework Preset: `Next.js`
-   - Root Directory: `apps/web`
-   - Note: _Ensure "Include source files outside of the Root Directory" is checked so the root Monorepo packages do not break!_
-   - Note: _A `vercel.json` file is pushed to the repo to correctly configure the Turborepo output paths automatically._
-3. Supply your `Environment Variables`:
-   - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase Project URL
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase `anon` public key
-   - `NEXT_PUBLIC_API_URL`: The URL of your deployed Render Backend (e.g., `https://luminae-api-xxxx.onrender.com`)
-
-### 6.3 Database (Supabase)
-
-Run the SQL queries found in `/schema.sql` in your Supabase SQL Editor. This initializes the `papers`, `analyses`, and `usage_logs` tables along with their secure Row Level Security (RLS) policies.
-
----
-
-## 7. BUDGET PROTECTION & ECONOMICS
-
-The application features a 3-layer Budget Guard algorithm:
-
-1. **Pre-flight Estimation:** Approximates input/output tokens using model-specific weights before making the API call. Rejects requests estimated over $0.50.
-2. **Global Circuit Breaker:** Uses Redis to maintain a countdown of the $15 allowance. Halts analysis if the global budget drops below $2.00.
-3. **Usage Logging:** Posts actual exact token usage costs retrieved from the API response to the `usage_logs` PostgreSQL table.
-
-Using highly optimized models like `ministral-8b-2512` and `mistral-ocr-latest`, Luminae achieves an approximate processing cost of **$0.03 - $0.82 per paper**, easily clearing the requirements of the Mistral World Hackathon.
+<p align="center">
+  Built with 🧠 for the <strong>Mistral AI Hackathon 2026</strong> — Mistral Vibe Track
+</p>
