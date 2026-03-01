@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { FileText, Clock, ArrowRight } from 'lucide-react'
+import { FileText, Clock, ArrowRight, Trash2 } from 'lucide-react'
 import { useAnalysisStore } from '@/stores/analysisStore'
 import { formatDate, truncate } from '@/lib/utils'
 
@@ -10,21 +10,40 @@ interface AnalysisListProps {
 }
 
 export function AnalysisList({ isGuestMode = false }: AnalysisListProps) {
-  const { analyses } = useAnalysisStore()
+  const { analyses, clearAnalyses } = useAnalysisStore()
   const analysisList = Object.entries(analyses)
+
+  // Don't render the history panel at all for guests
+  if (isGuestMode) return null
 
   return (
     <div className="bg-white rounded-xl shadow-sm border p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        Recent Analyses
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Recent Analyses
+        </h2>
+        {analysisList.length > 0 && (
+          <button
+            onClick={() => {
+              if (window.confirm('Clear all analysis history?')) {
+                clearAnalyses()
+              }
+            }}
+            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1 rounded-md hover:bg-red-50"
+            title="Clear all analyses"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Clear
+          </button>
+        )}
+      </div>
 
       {analysisList.length === 0 ? (
         <div className="text-center py-8">
           <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No analyses yet</p>
           <p className="text-sm text-gray-400">
-            Upload a paper to get started
+            Upload a document to get started
           </p>
         </div>
       ) : (
@@ -50,7 +69,7 @@ export function AnalysisList({ isGuestMode = false }: AnalysisListProps) {
 
               {analysis.economics && (
                 <div className="mt-2 text-xs text-gray-500">
-                  Cost: ${analysis.economics.estimated_cost_usd.toFixed(2)} •{' '}
+                  Cost: ${analysis.economics.estimated_cost_usd?.toFixed(2) || '0.00'} •{' '}
                   {analysis.economics.processing_time_seconds}s
                 </div>
               )}
@@ -61,7 +80,7 @@ export function AnalysisList({ isGuestMode = false }: AnalysisListProps) {
 
       {analysisList.length > 5 && (
         <Link
-          href="/dashboard"
+          href="/history"
           className="block text-center text-sm text-indigo-600 hover:text-indigo-700 mt-4"
         >
           View all analyses →

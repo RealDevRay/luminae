@@ -12,6 +12,8 @@ export interface AnalysisState {
   setProgress: (progress: number) => void
   saveAnalysis: (jobId: string, analysis: any) => void
   clearCurrentJob: () => void
+  clearAnalyses: () => void
+  removeAnalysis: (jobId: string) => void
 }
 
 export const useAnalysisStore = create<AnalysisState>()(
@@ -38,9 +40,19 @@ export const useAnalysisStore = create<AnalysisState>()(
 
       clearCurrentJob: () =>
         set({ currentJobId: null, status: null, progress: 0 }),
+
+      clearAnalyses: () =>
+        set({ analyses: {}, currentJobId: null, status: null, progress: 0 }),
+
+      removeAnalysis: (jobId) =>
+        set((state) => {
+          const { [jobId]: _, ...rest } = state.analyses
+          return { analyses: rest }
+        }),
     }),
     {
       name: 'luminae-analyses',
     }
   )
 )
+
