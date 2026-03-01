@@ -1,12 +1,29 @@
-# LUMINAE: Autonomous Research Illumination System
+# Mistral Worldwide Hackathon: LUMINAE
+
+### Autonomous Research Illumination System
+
+<p align="center">
+  <img src="https://img.shields.io/badge/MISTRAL%20AI-DEVELOPER-F97316?style=for-the-badge&logo=mistral&logoColor=white" alt="Mistral AI Developer Badge" />
+  <img src="https://img.shields.io/badge/MODEL-ministral--8b--2512-black?style=for-the-badge" alt="ministral-8b" />
+  <img src="https://img.shields.io/badge/MODEL-ministral--3b--2512-black?style=for-the-badge" alt="ministral-3b" />
+  <img src="https://img.shields.io/badge/MODEL-mistral--ocr--latest-black?style=for-the-badge" alt="mistral-ocr" />
+</p>
+
+---
+
+## 🚀 HACKATHON TRACK OVERVIEW
+
+**Track:** `2) Anything goes`  
+**Description:** _Use Mistral models through the API or OSS tools to create the best demos._
+
+**Demo Duration:** 2 minutes  
+**Team Size:** 1-4 participants
+
+---
 
 ## 1. EXECUTIVE SUMMARY
 
 **Luminae** is an autonomous research analysis platform that transforms academic papers into actionable intelligence. Using Mistral AI's multimodal capabilities, it performs deep critique, identifies methodological flaws, proposes novel experiments, and generates grant proposals—all within a strict $15 API budget through intelligent caching and cost optimization.
-
-**Hackathon Track:** Anything Goes (Agents, Vision, Reasoning, OCR)  
-**Demo Duration:** 2 minutes  
-**Team Size:** 1-4 participants
 
 ---
 
