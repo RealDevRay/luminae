@@ -59,3 +59,41 @@ async def root():
         "version": "1.0.0",
         "description": "Autonomous Research Illumination System",
     }
+
+
+@app.get("/debug")
+async def debug():
+    """Temporary debug endpoint to diagnose Render deployment issues."""
+    import os as debug_os
+    import importlib
+
+    api_key = debug_os.getenv("LUMINAE_MISTRAL_API_KEY", "")
+    supabase_url = debug_os.getenv("LUMINAE_SUPABASE_URL", "")
+    redis_url = debug_os.getenv("LUMINAE_UPSTASH_REDIS_REST_URL", "")
+
+    # Check if mistralai is importable
+    try:
+        import mistralai
+        mistral_version = getattr(mistralai, "__version__", "unknown")
+        mistral_status = f"installed v{mistral_version}"
+    except ImportError as e:
+        mistral_status = f"NOT INSTALLED: {e}"
+
+    # Check settings
+    try:
+        from .config import get_settings
+        s = get_settings()
+        settings_key = s.mistral_api_key
+        settings_key_status = f"{len(settings_key)} chars" if settings_key else "EMPTY"
+    except Exception as e:
+        settings_key_status = f"ERROR: {e}"
+
+    return {
+        "env_LUMINAE_MISTRAL_API_KEY": f"{api_key[:4]}...{api_key[-4:]}" if len(api_key) > 8 else f"EMPTY (len={len(api_key)})",
+        "env_LUMINAE_SUPABASE_URL": supabase_url[:30] + "..." if supabase_url else "EMPTY",
+        "env_LUMINAE_REDIS_URL": redis_url[:30] + "..." if redis_url else "EMPTY",
+        "mistralai_package": mistral_status,
+        "settings_mistral_api_key": settings_key_status,
+        "python_version": importlib.import_module("sys").version,
+        "working_dir": debug_os.getcwd(),
+    }
