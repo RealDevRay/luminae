@@ -20,11 +20,13 @@ const SUGGESTED_QUESTIONS = [
 ]
 
 const KNOWLEDGE_BASE: Record<string, string> = {
-  "how does luminae analyze": "Luminae uses a multi-agent AI pipeline: 1) OCR extracts text from PDFs, 2) Vision analyzes figures, 3) Five specialized agents critique methodology, audit datasets, design experiments, synthesize findings, and generate grant proposals. Each paper costs approximately $0.82.",
+  "how does luminae analyze": "Luminae uses a multi-agent AI pipeline powered by Mistral AI: 1) OCR extracts text from documents, 2) Vision analyzes figures, 3) Five specialized AI agents critique methodology, audit datasets, design experiments, synthesize findings, and generate grant proposals. Each analysis costs approximately $0.05 thanks to model optimization.",
   "methodology critique": "The methodology critique identifies: Design flaws (confounding variables, selection bias), Statistical power (sample size, effect sizes), Reproducibility (protocol clarity, code availability), and Validity threats. Each issue is severity-rated as critical, warning, or note.",
-  "cost": "Each complete analysis costs approximately $0.82: OCR ($0.05), Vision ($0.02), AI Agents ($0.75). With a $15 budget, you can analyze approximately 18 papers per month.",
-  "export": "Yes! You can export analysis results in multiple formats: Markdown, JSON, and the dashboard allows copying grant proposals directly. Look for the export buttons on the analysis results page.",
-  "history": "Sign in to access your analysis history. All your previous analyses are stored in your personal dashboard where you can retrieve and re-view results anytime.",
+  "cost": "Each complete analysis costs approximately $0.05 using optimized Mistral models (ministral-8b-2512). With a $15 budget, you can analyze approximately 300 documents. The budget card in the header shows your real-time remaining balance.",
+  "export": "Yes! After analysis completes, click the 'Export Report' button at the top of the results page. It downloads a comprehensive Markdown report covering methodology critique, dataset audit, proposed experiments, grant outline, and cost breakdown.",
+  "history": "Sign in to access your analysis history. All your previous analyses are stored and accessible from the sidebar. Guest users can still analyze documents, but results are only kept for the current browser session.",
+  "url": "You can paste any publicly accessible document URL instead of uploading a file. Go to the 'Paste URL' tab in the upload area. Note: URLs behind login pages (e.g. Moodle, private Google Drive) won't work — upload those files directly.",
+  "formats": "Luminae supports PDF, DOCX, PPTX, PNG, JPG, AVIF, and WebP. You can upload files directly or paste a public URL to any of these formats.",
 }
 
 export function Chatbot() {

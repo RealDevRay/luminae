@@ -302,7 +302,7 @@ async def get_budget():
     remaining = await budget_protection.get_remaining_budget()
     is_demo = remaining < 2.00
 
-    papers_remaining = int(remaining / 0.82) if remaining > 0 else 0
+    papers_remaining = int(remaining / 0.05) if remaining > 0 else 0
 
     return BudgetInfo(
         remaining_usd=remaining,
