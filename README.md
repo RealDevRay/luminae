@@ -88,15 +88,13 @@ Upload any document (or paste a public URL) and Luminae's 5 AI agents deliver:
 
 ## 3. MISTRAL AI CAPABILITIES UTILIZED
 
-| Capability              | Model                              | Use Case                                          | Cost Control                                       |
-| ----------------------- | ---------------------------------- | ------------------------------------------------- | -------------------------------------------------- |
-| **Document OCR**        | `mistral-ocr-latest`               | PDF text extraction with structure preservation   | 24h Redis cache, SHA256 deduplication              |
-| **Vision Analysis**     | `ministral-3b-2512` (fallback: 8B) | Figure extraction and interpretation              | Batch 5 figures/call, confidence threshold 0.7     |
-| **Reasoning**           | `ministral-8b-2512`                | Methodology critique, synthesis, grant generation | Token estimation pre-flight, circuit breaker guard |
-| **Agent Orchestration** | `ministral-8b-2512`                | Multi-agent workflow management                   | Parallel execution with asyncio.gather             |
-| **Structured Outputs**  | All models                         | JSON schemas for type-safe responses              | Validation retry, strict JSON prompting            |
+Luminae is a deliberate showcase of Mistral's latest multimodal ecosystem, with models explicitly chosen for their unmatched cost-to-performance ratios:
 
-_Note: Models were aggressively optimized to `ministral-8b-2512` to guarantee high volume paper processing without breaking the $15.00 hackathon budget._
+- **`mistral-ocr-latest` (The Digester):** Handles the heavy lifting of extracting highly complex academic PDFs. We use Mistral OCR to perfectly preserve the markdown structure, headers, and dense tables of scientific literature without losing the document's flow.
+- **`ministral-3b-2512` (The Visualizer):** Powers our Vision Analysis parallel stream. As figures are parsed from the paper by the OCR engine, this ultra-fast 3B model interprets charts, graphs, and diagrams into text descriptions, feeding vital visual context back into the reasoning pipeline.
+- **`ministral-8b-2512` (The Reasoning Engine):** The core "brain" powering all 5 of our diverse reasoning agents in parallel. We rely strictly on Mistral's native **Structured Output** constraint (`response_format={"type": "json_object"}`). Every single agent is locked into outputting highly complex JSON schemas ensuring robust data parsing.
+
+_Note: Models were aggressively optimized to `ministral-8b-2512` coupled with smart Redis caching to guarantee high volume paper processing without breaking the $15.00 hackathon budget limit._
 
 ---
 
@@ -138,19 +136,17 @@ Step 1: OCR  →  Step 2a: Vision Analysis     ┐
 
 ---
 
-## <a name="agents"></a>🧠 AI AGENTS
+## <a name="agents"></a>🧠 MISTRAL EXPERT AI AGENT SWARM
 
-Luminae uses **5 specialized AI agents**, each with a unique persona:
+Rather than relying on a single generic reasoning prompt, Luminae operates a highly concurrent multi-agent swarm via `asyncio.gather`. Each of the 5 specialized AI personas has a singular focus, preventing context dilution and generating extremely deep, expert-level analysis:
 
-| Agent                      | Persona                                      | Role                                                                                       |
-| -------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 🔬 **Methodology Critic**  | Dr. Elena Vasquez — 20yr peer review veteran | Identifies design flaws, statistical power issues, reproducibility gaps, validity threats  |
-| 📊 **Dataset Auditor**     | Dr. James Chen — Data governance expert      | Audits dataset size, bias sources, missing data handling, ethical concerns, representation |
-| 🧪 **Experiment Designer** | Dr. Sarah Okonkwo — Creative experimentalist | Designs 3 bold follow-up experiments with hypotheses, methods, feasibility scores          |
-| 🔗 **Synthesis Agent**     | Cross-agent synthesizer                      | Resolves conflicts between agents, generates 3 surprising key insights                     |
-| 📝 **Grant Generator**     | NSF proposal specialist                      | Creates complete grant outline: specific aims, research strategy, timeline, budget         |
+1. **🔬 The Methodology Critic:** Evaluates the paper’s experimental design. It actively hunts for confounding variables, selection biases, and statistical power issues, providing a severity-rated critique and an overall reproducibility score.
+2. **📊 The Dataset Auditor:** Analyzes the underlying data structures. It flags missing data handling strategies (MAR/MCAR), hidden demographic biases, and ethical or IRB oversights in the sample groups.
+3. **🧪 The Experiment Designer:** Steps beyond summary and enters pure creation. It invents 3 entirely novel follow-up experiments designed to address the specific flaws found by the Critic and Auditor, delivering strict hypotheses, methods, feasibility scores, and budget estimates.
+4. **🔗 The Synthesis Agent:** A high-level supervisor that cross-references the findings from the Critic, Auditor, and Experimentalist to resolve conflicts and output 3 counter-intuitive "Key Insights" that would surprise the original authors.
+5. **📝 The Grant Generator:** Translates the proposed experiments and synthesis into a structured, NSF-style funding proposal outline, complete with specific aims, timelines, and a research strategy.
 
-Each agent outputs **strict JSON** for structured, parseable results displayed in a tabbed dashboard.
+Each agent is strictly constrained to JSON schemas via Mistral's `response_format={"type": "json_object"}` mode, ensuring a type-safe, parseable, and hallucination-free data pipeline.
 
 ---
 
