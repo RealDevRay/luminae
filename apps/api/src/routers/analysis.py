@@ -142,9 +142,10 @@ async def analyze_paper(request: AnalysisRequest, background_tasks: BackgroundTa
                 "status": "uploaded",
                 "total_cost_usd": 0
             }).execute()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Initial insert error: {e}")
 
+    # Immediately push to background and return to prevent Vercel/Render connection drops
     background_tasks.add_task(run_analysis, job_id, file_content, request.filename, options)
 
     return AnalysisJob(

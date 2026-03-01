@@ -94,10 +94,10 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
       <div className="text-sm text-gray-500">
         <p className="font-medium mb-1">Estimated costs:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>OCR processing: ~$0.05</li>
-          <li>Vision analysis: ~$0.02</li>
-          <li>AI critique: ~$0.75</li>
-          <li className="font-medium text-indigo-600">Total: ~$0.82 per paper</li>
+          <li>OCR processing: ~$0.01</li>
+          <li>Vision analysis: ~$0.01</li>
+          <li>AI critique: ~$0.03</li>
+          <li className="font-medium text-indigo-600">Total: ~$0.05 per paper</li>
         </ul>
       </div>
     </div>
