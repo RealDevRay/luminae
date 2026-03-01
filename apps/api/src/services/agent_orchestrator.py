@@ -8,13 +8,13 @@ from .reasoning_service import reasoning_service
 from ..middleware.budget_guard import budget_protection
 
 COST_ESTIMATES = {
-    "ocr": 0.05,
-    "vision": 0.02,
-    "methodology_critic": 0.15,
-    "dataset_auditor": 0.10,
-    "experiment_designer": 0.15,
-    "synthesis_agent": 0.20,
-    "grant_generator": 0.15,
+    "ocr": 0.01,
+    "vision": 0.005,
+    "methodology_critic": 0.008,
+    "dataset_auditor": 0.006,
+    "experiment_designer": 0.008,
+    "synthesis_agent": 0.008,
+    "grant_generator": 0.008,
 }
 
 
@@ -135,6 +135,11 @@ class AgentOrchestrator:
 
         processing_time = time.time() - start_time
 
+        estimated_cost = sum(COST_ESTIMATES.values())
+
+        # Deduct from global budget in Redis
+        await budget_protection.deduct_budget(estimated_cost)
+
         return {
             "paper_id": paper_id,
             "metadata": {
@@ -162,7 +167,7 @@ class AgentOrchestrator:
             "grant_outline": grant_outline,
             "economics": {
                 "total_tokens_used": total_tokens,
-                "estimated_cost_usd": sum(COST_ESTIMATES.values()),
+                "estimated_cost_usd": estimated_cost,
                 "cache_hits": cache_hits,
                 "processing_time_seconds": int(processing_time),
             },
