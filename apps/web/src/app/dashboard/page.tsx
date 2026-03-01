@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { UploadZone } from '@/components/upload/UploadZone'
 import { BudgetCard } from '@/components/upload/BudgetCard'
 import { AnalysisList } from '@/components/analysis/AnalysisList'
+import { AnalysisDashboard } from '@/components/analysis/AnalysisDashboard'
 import { Chatbot } from '@/components/chatbot/Chatbot'
 import { Brain, ArrowLeft, History, Loader2, User, AlertTriangle, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -101,23 +102,7 @@ export default function DashboardPage() {
 
             {currentJobId && (
               <div className="bg-background border border-border rounded-2xl p-6">
-                <h2 className="text-lg font-semibold mb-4">
-                  Analysis in Progress
-                </h2>
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-center">
-                    <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-foreground" />
-                    <p className="text-muted-foreground">
-                      Processing your paper...
-                    </p>
-                    <Link
-                      href={`/analysis/${currentJobId}`}
-                      className="mt-4 inline-flex items-center font-medium hover:underline"
-                    >
-                      View Results →
-                    </Link>
-                  </div>
-                </div>
+                <AnalysisDashboard jobId={currentJobId} />
               </div>
             )}
           </div>

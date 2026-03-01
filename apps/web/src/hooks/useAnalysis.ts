@@ -52,18 +52,26 @@ export function useAnalysis(jobId: string) {
   const fetchAnalysis = useCallback(async () => {
     if (!jobId) return
 
-    setIsLoading(true)
-    setError(null)
-
     try {
-      const response = await apiClient.getResults(jobId)
-      setAnalysis(response)
+      // First check status (in-memory, fast)
+      const statusResponse = await apiClient.getStatus(jobId)
+      setAnalysis(statusResponse)
 
-      if (response.status === 'complete' && response.analysis) {
-        saveAnalysis(jobId, response.analysis)
+      // If complete, fetch full results (includes Supabase data)
+      if (statusResponse.status === 'complete') {
+        try {
+          const fullResponse = await apiClient.getResults(jobId)
+          setAnalysis(fullResponse)
+          if (fullResponse.analysis) {
+            saveAnalysis(jobId, fullResponse.analysis)
+          }
+        } catch {
+          // Status said complete but results fetch failed - use status data
+          if (statusResponse.analysis) {
+            saveAnalysis(jobId, statusResponse.analysis)
+          }
+        }
       }
-
-      return response
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch analysis'
       setError(message)
