@@ -87,7 +87,8 @@ export function useBudget() {
         papersRemaining: data.papers_remaining,
       })
     } catch (err) {
-      console.error('Failed to fetch budget:', err)
+      // Silently fail if Render backend is sleeping to prevent console spam
+      // The component handles undefined budget states gracefully
     } finally {
       setIsLoading(false)
     }
