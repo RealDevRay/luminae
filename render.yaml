@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: luminae-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    rootDir: apps/api
+    branch: main
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: LUMINAE_MISTRAL_API_KEY
+        sync: false
+      - key: LUMINAE_SUPABASE_URL
+        sync: false
+      - key: LUMINAE_SUPABASE_ANON_KEY
+        sync: false
+      - key: LUMINAE_SUPABASE_SERVICE_KEY
+        sync: false
+      - key: LUMINAE_UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: LUMINAE_UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: LUMINAE_MISTRAL_BUDGET_USD
+        value: "15.00"
+      - key: LUMINAE_MAX_REQUEST_USD
+        value: "0.50"
+      - key: LUMINAE_CIRCUIT_BREAKER_THRESHOLD
+        value: "2.00"
