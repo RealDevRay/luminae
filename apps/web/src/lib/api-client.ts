@@ -38,27 +38,35 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit & { timeoutMs?: number } = {}
   ): Promise<T> {
+    const { timeoutMs, ...fetchOptions } = options
+    const controller = new AbortController()
+    const id = timeoutMs ? setTimeout(() => controller.abort(), timeoutMs) : null
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token
-
     const url = `${this.baseUrl}${endpoint}`
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...options.headers,
-      },
-    })
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`API Error: ${response.status} - ${error}`)
+    try {
+      const response = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...fetchOptions.headers,
+        },
+      })
+
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(`API Error: ${response.status} - ${error}`)
+      }
+
+      return await response.json()
+    } finally {
+      if (id) clearTimeout(id)
     }
-
-    return response.json()
   }
 
   async analyze(
@@ -71,6 +79,7 @@ class ApiClient {
   ): Promise<AnalysisJob> {
     return this.request('/api/v1/analyze', {
       method: 'POST',
+      timeoutMs: 180000, // Allow up to 3 minutes for slow residential uploads
       body: JSON.stringify({
         file_base64: fileBase64,
         filename,
