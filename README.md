@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="https://luminae.qzz.io/">🌍 Live App</a> •
-  <a href="#demo">📺 YouTube Demo</a> •
+  <a href="https://youtu.be/ODygWunOA6Y">📺 YouTube Demo</a> •
   <a href="#features">✨ Features</a> •
   <a href="#architecture">🏗️ Architecture</a> •
   <a href="#agents">🧠 AI Agents</a>
@@ -36,7 +36,7 @@
 
 > **🌍 Live Application**: [https://luminae.qzz.io/](https://luminae.qzz.io/)  
 > **📊 Analysis Dashboard**: [https://luminae.qzz.io/dashboard](https://luminae.qzz.io/dashboard)  
-> **📺 YouTube Demo (2 min)**: _[Placeholder: Link to YouTube video will be added here]_
+> **📺 YouTube Demo (2 min)**: [Watch on YouTube](https://youtu.be/ODygWunOA6Y)
 
 ### 🧑‍⚖️ Note for Judges
 
