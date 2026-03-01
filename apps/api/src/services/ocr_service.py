@@ -1,5 +1,6 @@
 import hashlib
 import json
+import base64
 from typing import Optional
 from .mistral_client import mistral_client
 
@@ -24,7 +25,7 @@ class OCRService:
         self, file_content: bytes, filename: str
     ) -> dict:
         file_hash = self.compute_hash(file_content)
-        file_base64 = file_content.hex()
+        file_base64 = base64.b64encode(file_content).decode("utf-8")
 
         document = [
             {

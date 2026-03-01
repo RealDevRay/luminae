@@ -1,4 +1,5 @@
 import redis.asyncio as redis
+import asyncio
 from typing import Optional
 from ..config import get_settings
 
@@ -99,15 +100,17 @@ class BudgetProtection:
             from ..utils.supabase_client import supabase
             if supabase:
                 try:
-                    supabase.table("usage_logs").insert({
-                        "paper_id": paper_id,
-                        "endpoint": endpoint,
-                        "model": model,
-                        "input_tokens": input_tokens,
-                        "output_tokens": output_tokens,
-                        "estimated_cost": estimated_cost,
-                        "actual_cost": actual_cost
-                    }).execute()
+                    await asyncio.to_thread(
+                        lambda: supabase.table("usage_logs").insert({
+                            "paper_id": paper_id,
+                            "endpoint": endpoint,
+                            "model": model,
+                            "input_tokens": input_tokens,
+                            "output_tokens": output_tokens,
+                            "estimated_cost": estimated_cost,
+                            "actual_cost": actual_cost
+                        }).execute()
+                    )
                 except Exception as e:
                     print("Failed saving usage log to supabase", e)
 

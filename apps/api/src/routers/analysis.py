@@ -43,7 +43,9 @@ async def run_analysis(job_id: str, file_content: bytes, filename: str, options:
         )
         if supabase:
             try:
-                supabase.table("papers").update({"status": "processing_ocr"}).eq("id", job_id).execute()
+                await asyncio.to_thread(
+                    lambda: supabase.table("papers").update({"status": "processing_ocr"}).eq("id", job_id).execute()
+                )
             except Exception:
                 pass
 
@@ -64,22 +66,25 @@ async def run_analysis(job_id: str, file_content: bytes, filename: str, options:
         )
         if supabase:
             try:
-                supabase.table("papers").update({
-                    "status": "complete",
-                    "title": result.get("metadata", {}).get("title"),
-                    "total_cost_usd": result.get("economics", {}).get("estimated_cost_usd", 0)
-                }).eq("id", job_id).execute()
-                
-                supabase.table("analyses").insert({
-                    "paper_id": job_id,
-                    "methodology_critique": result.get("critique", {}).get("methodology", {}),
-                    "dataset_audit": result.get("critique", {}).get("dataset", {}),
-                    "experiment_proposals": result.get("improvements", {}).get("experiments", []),
-                    "synthesis": {"key_insights": result.get("improvements", {}).get("key_insights", [])},
-                    "grant_outline": result.get("grant_outline", {}),
-                    "overall_confidence": result.get("critique", {}).get("methodology", {}).get("confidence", 0.8),
-                    "processing_time_ms": result.get("metadata", {}).get("processing_duration_ms", 0),
-                }).execute()
+                def save_completion():
+                    supabase.table("papers").update({
+                        "status": "complete",
+                        "title": result.get("metadata", {}).get("title"),
+                        "total_cost_usd": result.get("economics", {}).get("estimated_cost_usd", 0)
+                    }).eq("id", job_id).execute()
+                    
+                    supabase.table("analyses").insert({
+                        "paper_id": job_id,
+                        "methodology_critique": result.get("critique", {}).get("methodology", {}),
+                        "dataset_audit": result.get("critique", {}).get("dataset", {}),
+                        "experiment_proposals": result.get("improvements", {}).get("experiments", []),
+                        "synthesis": {"key_insights": result.get("improvements", {}).get("key_insights", [])},
+                        "grant_outline": result.get("grant_outline", {}),
+                        "overall_confidence": result.get("critique", {}).get("methodology", {}).get("confidence", 0.8),
+                        "processing_time_ms": result.get("metadata", {}).get("processing_duration_ms", 0),
+                    }).execute()
+
+                await asyncio.to_thread(save_completion)
             except Exception as e:
                 print("Failed saving completion to supabase", e)
 
@@ -92,10 +97,12 @@ async def run_analysis(job_id: str, file_content: bytes, filename: str, options:
         )
         if supabase:
             try:
-                supabase.table("papers").update({
-                    "status": "error",
-                    "error_message": error_msg
-                }).eq("id", job_id).execute()
+                await asyncio.to_thread(
+                    lambda: supabase.table("papers").update({
+                        "status": "error",
+                        "error_message": error_msg
+                    }).eq("id", job_id).execute()
+                )
             except Exception:
                 pass
 
@@ -134,14 +141,16 @@ async def analyze_paper(request: AnalysisRequest, background_tasks: BackgroundTa
 
     if supabase:
         try:
-            supabase.table("papers").insert({
-                "id": job_id,
-                "user_id": user_id,
-                "filename": request.filename,
-                "file_hash": file_hash,
-                "status": "uploaded",
-                "total_cost_usd": 0
-            }).execute()
+            def save_initial():
+                supabase.table("papers").insert({
+                    "id": job_id,
+                    "user_id": user_id,
+                    "filename": request.filename,
+                    "file_hash": file_hash,
+                    "status": "uploaded",
+                    "total_cost_usd": 0
+                }).execute()
+            await asyncio.to_thread(save_initial)
         except Exception as e:
             print(f"Initial insert error: {e}")
 
