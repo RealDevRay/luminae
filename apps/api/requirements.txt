@@ -7,3 +7,4 @@ redis
 supabase
 python-dotenv
 aiofiles
+mistralai

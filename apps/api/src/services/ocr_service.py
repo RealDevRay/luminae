@@ -27,12 +27,10 @@ class OCRService:
         file_hash = self.compute_hash(file_content)
         file_base64 = base64.b64encode(file_content).decode("utf-8")
 
-        document = [
-            {
-                "type": "document_base64",
-                "document": file_base64,
-            }
-        ]
+        document = {
+            "type": "document_base64",
+            "document_base64": file_base64,
+        }
 
         result = await mistral_client.ocr_document(
             document=document,
