@@ -19,9 +19,6 @@ OCR_CONFIG = {
 class OCRService:
     def __init__(self):
         self.config = OCR_CONFIG
-        self.api_key = settings.mistral_api_key
-        # We must use the asynchronous client methods to avoid blocking the event loop
-        self.client = Mistral(api_key=self.api_key)
 
     def compute_hash(self, content: bytes) -> str:
         return hashlib.sha256(content).hexdigest()
@@ -29,6 +26,8 @@ class OCRService:
     async def process_pdf(
         self, file_content: bytes, filename: str
     ) -> dict:
+        client = Mistral(api_key=get_settings().mistral_api_key)
+        
         file_hash = self.compute_hash(file_content)
         temp_file_path = None
         uploaded_pdf = None
@@ -42,7 +41,7 @@ class OCRService:
 
             # Step 1: Upload the file to Mistral Cloud
             with open(temp_file_path, "rb") as f:
-                uploaded_pdf = await self.client.files.upload_async(
+                uploaded_pdf = await client.files.upload_async(
                     file={
                         "file_name": filename,
                         "content": f,
@@ -51,10 +50,10 @@ class OCRService:
                 )
 
             # Step 2: Get a Signed URL
-            signed_url = await self.client.files.get_signed_url_async(file_id=uploaded_pdf.id)
+            signed_url = await client.files.get_signed_url_async(file_id=uploaded_pdf.id)
 
             # Step 3: Trigger OCR using the Signed URL
-            ocr_response = await self.client.ocr.process_async(
+            ocr_response = await client.ocr.process_async(
                 model=self.config["model"],
                 document={
                     "type": "document_url",
@@ -71,7 +70,7 @@ class OCRService:
             # Step 4: Always clean up the Cloud file and local tempfile
             if uploaded_pdf:
                 try:
-                    await self.client.files.delete_async(file_id=uploaded_pdf.id)
+                    await client.files.delete_async(file_id=uploaded_pdf.id)
                 except Exception:
                     pass
             if temp_file_path and os.path.exists(temp_file_path):

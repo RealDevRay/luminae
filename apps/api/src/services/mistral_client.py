@@ -8,9 +8,9 @@ settings = get_settings()
 
 
 class MistralClient:
-    def __init__(self):
-        self.api_key = settings.mistral_api_key
-        self.client = Mistral(api_key=self.api_key)
+    def _get_client(self):
+        # Instantiate lazily to ensure pydantic loads the LUMINAE_ prefixed env vars
+        return Mistral(api_key=get_settings().mistral_api_key)
 
     async def chat_complete(
         self,
@@ -19,7 +19,8 @@ class MistralClient:
         max_tokens: int = 2000,
         temperature: float = 0.7,
     ) -> dict:
-        response = await self.client.chat.complete_async(
+        client = self._get_client()
+        response = await client.chat.complete_async(
             model=model,
             messages=messages,
             max_tokens=max_tokens,
@@ -29,13 +30,20 @@ class MistralClient:
 
     async def ocr_document(
         self,
-        document: dict,
+        document_base64: str,
         include_image_base64: bool = True,
         table_format: str = "markdown",
     ) -> dict:
-        response = await self.client.ocr.process_async(
+        client = self._get_client()
+        
+        document_dict = {
+            "type": "document_url",
+            "document_url": f"data:application/pdf;base64,{document_base64}"
+        }
+        
+        response = await client.ocr.process_async(
             model="mistral-ocr-latest",
-            document=document,
+            document=document_dict,
             include_image_base64=include_image_base64,
             table_format=table_format,
         )
@@ -61,7 +69,8 @@ class MistralClient:
             }
         ]
 
-        response = await self.client.chat.complete_async(
+        client = self._get_client()
+        response = await client.chat.complete_async(
             model=model,
             messages=messages,
             max_tokens=max_tokens,
