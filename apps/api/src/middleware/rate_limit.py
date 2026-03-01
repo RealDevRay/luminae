@@ -3,7 +3,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from typing import Optional
 
-MAX_REQUESTS_PER_MINUTE = 10
+MAX_REQUESTS_PER_MINUTE = 60
 REQUEST_WINDOW = 60
 
 
@@ -56,7 +56,9 @@ rate_limiter = RateLimiter()
 
 
 async def rate_limit_middleware(request: Request, call_next):
-    if request.url.path == "/health":
+    # Exempt health, status polling, and budget from rate limiting
+    path = request.url.path
+    if path == "/health" or "/status/" in path or path.endswith("/budget"):
         return await call_next(request)
 
     if not await rate_limiter.check_rate_limit(request):
