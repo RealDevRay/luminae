@@ -1,8 +1,7 @@
 import hashlib
 import json
-import base64
 import os
-import tempfile
+import base64
 from typing import Optional
 from mistralai import Mistral
 from ..config import get_settings
@@ -26,58 +25,27 @@ class OCRService:
     async def process_pdf(
         self, file_content: bytes, filename: str
     ) -> dict:
-        client = Mistral(api_key=get_settings().mistral_api_key)
-        
+        api_key = os.getenv("LUMINAE_MISTRAL_API_KEY") or get_settings().mistral_api_key
+        client = Mistral(api_key=api_key)
+
         file_hash = self.compute_hash(file_content)
-        temp_file_path = None
-        uploaded_pdf = None
 
-        try:
-            # Mistral client.files.upload takes a file-like object or a path.
-            # We'll write the bytes to a secure tempfile to stream it reliably
-            fd, temp_file_path = tempfile.mkstemp(suffix=".pdf")
-            with os.fdopen(fd, "wb") as f:
-                f.write(file_content)
+        # Encode the raw PDF bytes to base64 and use Mistral's inline base64 method.
+        # This is the simplest OCR approach per the official docs:
+        # https://docs.mistral.ai/capabilities/document_ai/basic_ocr
+        b64_encoded = base64.b64encode(file_content).decode("utf-8")
 
-            # Step 1: Upload the file to Mistral Cloud
-            with open(temp_file_path, "rb") as f:
-                uploaded_pdf = await client.files.upload_async(
-                    file={
-                        "file_name": filename,
-                        "content": f,
-                    },
-                    purpose="ocr"
-                )
+        ocr_response = await client.ocr.process_async(
+            model=self.config["model"],
+            document={
+                "type": "document_url",
+                "document_url": f"data:application/pdf;base64,{b64_encoded}",
+            },
+            include_image_base64=self.config["include_image_base64"],
+        )
 
-            # Step 2: Get a Signed URL
-            signed_url = await client.files.get_signed_url_async(file_id=uploaded_pdf.id)
-
-            # Step 3: Trigger OCR using the Signed URL
-            ocr_response = await client.ocr.process_async(
-                model=self.config["model"],
-                document={
-                    "type": "document_url",
-                    "document_url": signed_url.url,
-                },
-                table_format=self.config["table_format"],
-                include_image_base64=self.config["include_image_base64"]
-            )
-            
-            # Convert SDK response to dict for legacy parsing
-            result = ocr_response.model_dump()
-
-        finally:
-            # Step 4: Always clean up the Cloud file and local tempfile
-            if uploaded_pdf:
-                try:
-                    await client.files.delete_async(file_id=uploaded_pdf.id)
-                except Exception:
-                    pass
-            if temp_file_path and os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                except Exception:
-                    pass
+        # The SDK returns a Pydantic model — convert to a plain dict
+        result = ocr_response.model_dump()
 
         extracted_text = self._extract_text(result)
         figures = self._extract_figures(result)
@@ -108,13 +76,13 @@ class OCRService:
         for page in pages:
             images = page.get("images", [])
             for img in images:
-                if "base64" in img:
+                if "image_base64" in img:
                     figure_id += 1
                     figures.append({
                         "id": f"fig-{figure_id}",
                         "type": "image",
-                        "base64": img["base64"],
-                        "page": page.get("index", 1),
+                        "base64": img["image_base64"],
+                        "page": page.get("index", 0),
                     })
 
         return figures
@@ -125,8 +93,9 @@ class OCRService:
         table_id = 0
 
         for page in pages:
-            if "tables" in page:
-                for tbl in page["tables"]:
+            page_tables = page.get("tables", [])
+            if page_tables:
+                for tbl in page_tables:
                     table_id += 1
                     tables.append({
                         "id": f"table-{table_id}",
