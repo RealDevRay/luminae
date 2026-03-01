@@ -78,6 +78,7 @@ export function useAnalysis(jobId: string) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisJob | null>(null)
+  const [networkFailures, setNetworkFailures] = useState(0)
   const { saveAnalysis } = useAnalysisStore()
 
   const fetchAnalysis = useCallback(async () => {
@@ -87,6 +88,8 @@ export function useAnalysis(jobId: string) {
       // First check status (in-memory, fast)
       const statusResponse = await apiClient.getStatus(jobId)
       setAnalysis(statusResponse)
+      setNetworkFailures(0) // Reset on success
+      setError(null)
 
       // If complete, fetch full results (includes Supabase data)
       if (statusResponse.status === 'complete') {
@@ -104,14 +107,28 @@ export function useAnalysis(jobId: string) {
         }
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch analysis'
-      setError(message)
+      // Silently retry on transient network errors (Render free tier drops connections)
+      setNetworkFailures(prev => {
+        const newCount = prev + 1
+        // Only show error after 10 consecutive failures (~30s of polling)
+        if (newCount >= 10) {
+          setError('Connection lost. The server may be restarting — click Retry.')
+        }
+        return newCount
+      })
     } finally {
       setIsLoading(false)
     }
   }, [jobId, saveAnalysis])
 
-  return { analysis, isLoading, error, fetchAnalysis }
+  const retry = useCallback(() => {
+    setError(null)
+    setNetworkFailures(0)
+    setIsLoading(true)
+    fetchAnalysis()
+  }, [fetchAnalysis])
+
+  return { analysis, isLoading, error, fetchAnalysis, retry }
 }
 
 export function useBudget() {

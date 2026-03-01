@@ -12,7 +12,7 @@ interface AnalysisDashboardProps {
 
 export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview')
-  const { analysis, isLoading, error, fetchAnalysis } = useAnalysis(jobId)
+  const { analysis, isLoading, error, fetchAnalysis, retry } = useAnalysis(jobId)
 
   useEffect(() => {
     fetchAnalysis()
@@ -40,11 +40,17 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
       <div className="bg-red-50 border border-red-200 rounded-xl p-6">
         <div className="flex items-center gap-3 text-red-600">
           <XCircle className="w-6 h-6" />
-          <p className="font-medium">Analysis failed</p>
+          <p className="font-medium">Analysis issue</p>
         </div>
         <p className="text-red-600 mt-2">
           {error || analysis?.error_message || 'Unknown error'}
         </p>
+        <button
+          onClick={retry}
+          className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+        >
+          Retry
+        </button>
       </div>
     )
   }
