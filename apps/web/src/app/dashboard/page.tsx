@@ -6,12 +6,12 @@ import { UploadZone } from '@/components/upload/UploadZone'
 import { BudgetCard } from '@/components/upload/BudgetCard'
 import { AnalysisList } from '@/components/analysis/AnalysisList'
 import { Chatbot } from '@/components/chatbot/Chatbot'
-import { Brain, ArrowLeft, History, Loader2, User, AlertTriangle } from 'lucide-react'
+import { Brain, ArrowLeft, History, Loader2, User, AlertTriangle, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function DashboardPage() {
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
-  const { user, loading } = useAuth()
+  const { user, loading, signOut } = useAuth()
   const isGuestMode = !loading && !user
 
   return (
@@ -43,13 +43,31 @@ export default function DashboardPage() {
               >
                 <History className="w-5 h-5" />
               </Link>
-              <Link
-                href="/auth"
-                className="flex items-center gap-2 px-3 py-2 bg-foreground text-background rounded-lg text-sm font-medium"
-              >
-                <User className="w-4 h-4" />
-                Sign In
-              </Link>
+              {user ? (
+                <div className="flex items-center gap-3 bg-secondary/50 pl-3 pr-2 py-1.5 rounded-full border border-border">
+                  <div className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold">
+                    {user.email?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-sm font-medium mr-2 max-w-[120px] truncate hidden sm:inline-block">
+                    {user.email}
+                  </span>
+                  <button
+                    onClick={() => signOut()}
+                    className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-full transition-colors"
+                    title="Sign out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/auth"
+                  className="flex items-center gap-2 px-3 py-2 bg-foreground text-background rounded-lg text-sm font-medium"
+                >
+                  <User className="w-4 h-4" />
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
         </div>
