@@ -43,9 +43,9 @@ export default function HomePage() {
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 Now with AI-powered grant generation
               </div>
-              <h1 className="text-4xl sm:text-6xl font-bold tracking-tight">
+              <h1 className="text-4xl sm:text-6xl font-bold tracking-tight break-words">
                 Illuminate Your{' '}
-                <span className="relative">
+                <span className="relative whitespace-nowrap">
                   <span className="relative z-10">Research</span>
                   <span className="absolute bottom-2 left-0 right-0 h-3 bg-foreground/10 -z-10" />
                 </span>

@@ -17,7 +17,7 @@ export function FormattedText({ text, className = '', as: Tag = 'p' }: Formatted
 
   const rendered = parseMarkdownInline(text)
 
-  return <Tag className={className}>{rendered}</Tag>
+  return <Tag className={`break-words ${className}`.trim()}>{rendered}</Tag>
 }
 
 /**

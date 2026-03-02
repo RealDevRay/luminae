@@ -230,14 +230,14 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="border-b">
-          <nav className="flex -mb-px">
+        <div className="border-b overflow-x-auto scrollbar-hide">
+          <nav className="flex -mb-px min-w-max">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors
+                  whitespace-nowrap py-4 px-4 sm:px-6 border-b-2 font-medium text-sm transition-colors
                   ${
                     activeTab === tab.id
                       ? 'border-indigo-500 text-indigo-600'
@@ -287,7 +287,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                   )}
                 </div>
                 {data.metadata?.source_url && (
-                  <p className="text-sm text-gray-400 mt-1 truncate max-w-xl" title={data.metadata.source_url}>
+                  <p className="text-sm text-gray-400 mt-1 break-all whitespace-pre-wrap max-w-full" title={data.metadata.source_url}>
                     Source: {data.metadata.source_url}
                   </p>
                 )}
