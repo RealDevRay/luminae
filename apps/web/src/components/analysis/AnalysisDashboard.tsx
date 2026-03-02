@@ -640,8 +640,9 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
 
               {/* Per-agent cost breakdown */}
               <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
+                <div className="overflow-x-auto scrollbar-hide">
+                  <table className="w-full text-sm sm:w-auto min-w-full">
+                    <thead className="bg-gray-50">
                     <tr>
                       <th className="text-left px-4 py-2 font-medium text-gray-600">Agent</th>
                       <th className="text-left px-4 py-2 font-medium text-gray-600">Model</th>
@@ -659,6 +660,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                     <tr className="bg-gray-50 font-medium"><td className="px-4 py-2" colSpan={2}>Total</td><td className="px-4 py-2 text-right">${data.economics?.estimated_cost_usd?.toFixed(3) || '0.053'}</td></tr>
                   </tbody>
                 </table>
+                </div>
               </div>
 
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">

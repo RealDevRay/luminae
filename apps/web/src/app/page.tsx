@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Brain, FileText, Lightbulb, DollarSign, Zap, ChevronRight, Github, Play } from 'lucide-react'
+import { ArrowRight, Brain, FileText, Lightbulb, DollarSign, Zap, ChevronRight, Github, Play, Menu, X } from 'lucide-react'
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   return (
     <div className="min-h-screen">
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
@@ -15,7 +17,7 @@ export default function HomePage() {
               </div>
               <span className="text-xl font-bold">Luminae</span>
             </Link>
-            <nav className="flex items-center space-x-4">
+            <nav className="hidden md:flex items-center space-x-4">
               <Link
                 href="/auth"
                 className="text-sm font-medium hover:text-foreground/80 text-muted-foreground"
@@ -30,8 +32,44 @@ export default function HomePage() {
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
             </nav>
+            {/* Mobile menu button */}
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-md text-foreground hover:bg-muted focus:outline-none"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <span className="sr-only">Open main menu</span>
+              {mobileMenuOpen ? (
+                <X className="block h-6 w-6" aria-hidden="true" />
+              ) : (
+                <Menu className="block h-6 w-6" aria-hidden="true" />
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu panel */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t bg-background">
+            <div className="px-4 py-4 space-y-4 shadow-xl">
+              <Link
+                href="/auth"
+                className="block text-base font-medium text-foreground hover:text-foreground/80"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/dashboard"
+                className="flex items-center justify-between w-full px-4 py-3 bg-foreground text-background rounded-lg font-medium hover:opacity-90 transition-opacity"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Get Started
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       <main>
