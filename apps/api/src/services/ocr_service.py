@@ -5,6 +5,8 @@ import base64
 from typing import Optional
 from mistralai import Mistral
 from ..config import get_settings
+from ..middleware.budget_guard import budget_protection
+import asyncio
 
 settings = get_settings()
 
@@ -48,6 +50,13 @@ class OCRService:
         else:
             document = {"type": "document_url", "document_url": url}
 
+        # Generate hash from URL for deduplication
+        url_hash = hashlib.sha256(url.encode()).hexdigest()
+
+        cached_ocr = await self._get_cached_ocr(url_hash)
+        if cached_ocr:
+            return cached_ocr
+
         ocr_response = await client.ocr.process_async(
             model=self.config["model"],
             document=document,
@@ -59,10 +68,7 @@ class OCRService:
         figures = self._extract_figures(result)
         tables = self._extract_tables(result)
 
-        # Generate hash from URL for deduplication
-        url_hash = hashlib.sha256(url.encode()).hexdigest()
-
-        return {
+        final_result = {
             "hash": url_hash,
             "text": extracted_text,
             "figures": figures,
@@ -70,12 +76,18 @@ class OCRService:
             "page_count": len(result.get("pages", [])),
             "model": self.config["model"],
         }
+        await self._cache_ocr(url_hash, final_result)
+        return final_result
 
     async def process_pdf(
         self, file_content: bytes, filename: str
     ) -> dict:
         client = self._get_client()
         file_hash = self.compute_hash(file_content)
+
+        cached_ocr = await self._get_cached_ocr(file_hash)
+        if cached_ocr:
+            return cached_ocr
 
         b64_encoded = base64.b64encode(file_content).decode("utf-8")
 
@@ -93,7 +105,7 @@ class OCRService:
         figures = self._extract_figures(result)
         tables = self._extract_tables(result)
 
-        return {
+        final_result = {
             "hash": file_hash,
             "text": extracted_text,
             "figures": figures,
@@ -101,11 +113,17 @@ class OCRService:
             "page_count": len(result.get("pages", [])),
             "model": self.config["model"],
         }
+        await self._cache_ocr(file_hash, final_result)
+        return final_result
 
     async def process_image(self, file_content: bytes, filename: str) -> dict:
         """Process an uploaded image file via base64."""
         client = self._get_client()
         file_hash = self.compute_hash(file_content)
+
+        cached_ocr = await self._get_cached_ocr(file_hash)
+        if cached_ocr:
+            return cached_ocr
 
         ext = os.path.splitext(filename.lower())[1]
         mime_types = {
@@ -135,7 +153,7 @@ class OCRService:
         figures = self._extract_figures(result)
         tables = self._extract_tables(result)
 
-        return {
+        final_result = {
             "hash": file_hash,
             "text": extracted_text,
             "figures": figures,
@@ -143,6 +161,8 @@ class OCRService:
             "page_count": len(result.get("pages", [])),
             "model": self.config["model"],
         }
+        await self._cache_ocr(file_hash, final_result)
+        return final_result
 
     def _extract_text(self, ocr_result: dict) -> str:
         pages = ocr_result.get("pages", [])
@@ -190,6 +210,26 @@ class OCRService:
                     })
 
         return tables
+
+    async def _get_cached_ocr(self, file_hash: str) -> Optional[dict]:
+        try:
+            redis_client = await asyncio.wait_for(budget_protection.get_redis(), timeout=3)
+            if redis_client:
+                data = await redis_client.get(f"ocr:{file_hash}")
+                if data:
+                    return json.loads(data)
+        except Exception:
+            pass
+        return None
+
+    async def _cache_ocr(self, file_hash: str, result: dict) -> None:
+        try:
+            redis_client = await asyncio.wait_for(budget_protection.get_redis(), timeout=3)
+            if redis_client:
+                # Cache for 30 days
+                await redis_client.set(f"ocr:{file_hash}", json.dumps(result), ex=86400 * 30)
+        except Exception:
+            pass
 
 
 ocr_service = OCRService()

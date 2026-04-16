@@ -128,8 +128,8 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
           className={cn(
             'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors',
             isDragActive
-              ? 'border-indigo-500 bg-indigo-50'
-              : 'border-gray-300 hover:border-gray-400',
+              ? 'border-primary/50 bg-primary/5'
+              : 'border-border hover:border-gray-400',
             isProcessing && 'opacity-50 cursor-not-allowed'
           )}
         >
@@ -137,19 +137,19 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
           <div className="flex flex-col items-center">
             {isUploading ? (
               <>
-                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
                 <p className="text-gray-600">Uploading and processing...</p>
                 <div className="w-full max-w-xs bg-gray-200 rounded-full h-2 mt-4">
                   <div
-                    className="bg-indigo-600 h-2 rounded-full transition-all"
+                    className="bg-primary h-2 rounded-full transition-all"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </>
             ) : (
               <>
-                <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                  <Upload className="w-8 h-8 text-indigo-600" />
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                  <Upload className="w-8 h-8 text-primary" />
                 </div>
                 <p className="text-lg font-medium text-gray-900">
                   {isDragActive ? 'Drop your document here' : 'Drag & drop your document'}
@@ -182,8 +182,8 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
         <form onSubmit={handleUrlSubmit} className="space-y-3">
           <div className="border-2 border-dashed rounded-xl p-6 transition-colors border-gray-300">
             <div className="flex flex-col items-center mb-4">
-              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                <Link className="w-8 h-8 text-indigo-600" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <Link className="w-8 h-8 text-primary" />
               </div>
               <p className="text-lg font-medium text-gray-900">
                 Paste a document URL
@@ -202,13 +202,13 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
                   setUrlError(null)
                 }}
                 placeholder="https://arxiv.org/pdf/2201.04234"
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                 disabled={isUrlUploading}
               />
               <button
                 type="submit"
                 disabled={isUrlUploading || !urlInput.trim()}
-                className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium whitespace-nowrap"
+                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium whitespace-nowrap"
               >
                 {isUrlUploading ? (
                   <span className="flex items-center gap-2">
@@ -244,7 +244,7 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
           <li>OCR processing: ~$0.01</li>
           <li>Vision analysis: ~$0.01</li>
           <li>AI critique: ~$0.03</li>
-          <li className="font-medium text-indigo-600">Total: ~$0.05 per document</li>
+          <li className="font-medium text-primary">Total: ~$0.05 per document</li>
         </ul>
       </div>
     </div>

@@ -3,10 +3,6 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from typing import Optional
 
-MAX_REQUESTS_PER_MINUTE = 60
-REQUEST_WINDOW = 60
-
-
 class RateLimiter:
     def __init__(self):
         self._requests: dict[str, list[float]] = {}
@@ -17,7 +13,7 @@ class RateLimiter:
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
-    async def check_rate_limit(self, request: Request) -> bool:
+    async def check_rate_limit(self, request: Request, max_reqs: int, window: int) -> bool:
         client_ip = self._get_client_ip(request)
         current_time = time.time()
 
@@ -27,29 +23,29 @@ class RateLimiter:
         self._requests[client_ip] = [
             req_time
             for req_time in self._requests[client_ip]
-            if current_time - req_time < REQUEST_WINDOW
+            if current_time - req_time < window
         ]
 
-        if len(self._requests[client_ip]) >= MAX_REQUESTS_PER_MINUTE:
+        if len(self._requests[client_ip]) >= max_reqs:
             return False
 
         self._requests[client_ip].append(current_time)
         return True
 
-    async def get_remaining(self, request: Request) -> int:
+    async def get_remaining(self, request: Request, max_reqs: int, window: int) -> int:
         client_ip = self._get_client_ip(request)
         current_time = time.time()
 
         if client_ip not in self._requests:
-            return MAX_REQUESTS_PER_MINUTE
+            return max_reqs
 
         recent_requests = [
             req_time
             for req_time in self._requests[client_ip]
-            if current_time - req_time < REQUEST_WINDOW
+            if current_time - req_time < window
         ]
 
-        return max(0, MAX_REQUESTS_PER_MINUTE - len(recent_requests))
+        return max(0, max_reqs - len(recent_requests))
 
 
 rate_limiter = RateLimiter()
@@ -61,14 +57,25 @@ async def rate_limit_middleware(request: Request, call_next):
     if path == "/health" or "/status/" in path or path.endswith("/budget"):
         return await call_next(request)
 
-    if not await rate_limiter.check_rate_limit(request):
+    # Determine if user is authenticated
+    auth_header = request.headers.get("Authorization", "")
+    is_authenticated = auth_header.startswith("Bearer ") and len(auth_header) > 10
+
+    if is_authenticated:
+        max_reqs = 60
+        window = 60
+    else:
+        max_reqs = 5
+        window = 3600  # 1 hour
+
+    if not await rate_limiter.check_rate_limit(request, max_reqs, window):
         # Return JSONResponse directly — do NOT raise HTTPException in middleware
         return JSONResponse(
             status_code=429,
-            content={"detail": "Rate limit exceeded. Max 60 requests per minute."},
+            content={"detail": "Rate limit exceeded. " + ("Max 60 requests per minute." if is_authenticated else "Guests are limited to 5 requests per hour. Please log in.")},
         )
 
     response = await call_next(request)
-    remaining = await rate_limiter.get_remaining(request)
+    remaining = await rate_limiter.get_remaining(request, max_reqs, window)
     response.headers["X-RateLimit-Remaining"] = str(remaining)
     return response

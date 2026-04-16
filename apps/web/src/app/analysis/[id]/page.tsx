@@ -4,7 +4,8 @@ import { use, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, FileText, Brain, Lightbulb, DollarSign, Clock, Loader2, History } from 'lucide-react'
-import { AnalysisDashboard } from '@/components/analysis/AnalysisDashboard'
+import dynamic from 'next/dynamic'
+const AnalysisDashboard = dynamic(() => import('@/components/analysis/AnalysisDashboard').then(mod => mod.AnalysisDashboard), { ssr: false })
 import { Chatbot } from '@/components/chatbot/Chatbot'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -69,7 +70,7 @@ export default function AnalysisPage({ params }: PageProps) {
         <AnalysisDashboard jobId={id} />
       </main>
 
-      <Chatbot />
+      <Chatbot paperId={id} />
     </div>
   )
 }

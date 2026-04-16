@@ -1,9 +1,13 @@
 import base64
 import os
+import logging
 from typing import Optional
 from mistralai import Mistral
 from ..config import get_settings
-from ..middleware.budget_guard import budget_protection, MODEL_PRICING
+from ..middleware.budget_guard import budget_protection, current_job_tokens, current_job_cost
+from ..utils.retry import retry_with_backoff
+
+logger = logging.getLogger("luminae.mistral_client")
 
 settings = get_settings()
 
@@ -23,19 +27,31 @@ class MistralClient:
         temperature: float = 0.7,
         response_format: Optional[dict] = None,
     ) -> dict:
-        client = self._get_client()
-        
-        kwargs = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-        }
-        if response_format:
-            kwargs["response_format"] = response_format
+        async def _call():
+            client = self._get_client()
+            kwargs = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            }
+            if response_format:
+                kwargs["response_format"] = response_format
+            response = await client.chat.complete_async(**kwargs)
             
-        response = await client.chat.complete_async(**kwargs)
-        return response.model_dump()
+            # Tally actual tokens and cost
+            if getattr(response, 'usage', None):
+                prompt_tokens = response.usage.prompt_tokens
+                comp_tokens = response.usage.completion_tokens
+                total_tokens = prompt_tokens + comp_tokens
+                cost = budget_protection.calculate_actual_cost(model, prompt_tokens, comp_tokens)
+                
+                current_job_tokens.set(current_job_tokens.get() + total_tokens)
+                current_job_cost.set(current_job_cost.get() + cost)
+                
+            return response.model_dump()
+
+        return await retry_with_backoff(_call, max_retries=3, base_delay=1.0)
 
     async def ocr_document(
         self,
@@ -43,20 +59,31 @@ class MistralClient:
         include_image_base64: bool = True,
         table_format: str = "markdown",
     ) -> dict:
-        client = self._get_client()
-        
-        document_dict = {
-            "type": "document_url",
-            "document_url": f"data:application/pdf;base64,{document_base64}"
-        }
-        
-        response = await client.ocr.process_async(
-            model="mistral-ocr-latest",
-            document=document_dict,
-            include_image_base64=include_image_base64,
-            table_format=table_format,
-        )
-        return response.model_dump()
+        async def _call():
+            client = self._get_client()
+            document_dict = {
+                "type": "document_url",
+                "document_url": f"data:application/pdf;base64,{document_base64}"
+            }
+            response = await client.ocr.process_async(
+                model="mistral-ocr-latest",
+                document=document_dict,
+                include_image_base64=include_image_base64,
+                table_format=table_format,
+            )
+            
+            # Tally actual tokens and cost for OCR (note: Mistral OCR might populate usage differently)
+            if getattr(response, 'usage', None) and getattr(response.usage, 'prompt_tokens', None):
+                prompt_tokens = response.usage.prompt_tokens
+                comp_tokens = getattr(response.usage, 'completion_tokens', 0)
+                total_tokens = prompt_tokens + comp_tokens
+                cost = budget_protection.calculate_actual_cost("mistral-ocr-latest", prompt_tokens, comp_tokens)
+                current_job_tokens.set(current_job_tokens.get() + total_tokens)
+                current_job_cost.set(current_job_cost.get() + cost)
+
+            return response.model_dump()
+
+        return await retry_with_backoff(_call, max_retries=3, base_delay=2.0)
 
     async def vision_analyze(
         self,
@@ -65,26 +92,40 @@ class MistralClient:
         prompt: str,
         max_tokens: int = 1000,
     ) -> dict:
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    *[
-                        {"type": "image_url", "image_url": f"data:image/jpeg;base64,{img}"}
-                        for img in images
+        async def _call():
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        *[
+                            {"type": "image_url", "image_url": f"data:image/jpeg;base64,{img}"}
+                            for img in images
+                        ],
+                        {"type": "text", "text": prompt},
                     ],
-                    {"type": "text", "text": prompt},
-                ],
-            }
-        ]
+                }
+            ]
+            client = self._get_client()
+            response = await client.chat.complete_async(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+            )
+            
+            # Tally actual tokens and cost
+            if getattr(response, 'usage', None):
+                prompt_tokens = response.usage.prompt_tokens
+                comp_tokens = response.usage.completion_tokens
+                total_tokens = prompt_tokens + comp_tokens
+                cost = budget_protection.calculate_actual_cost(model, prompt_tokens, comp_tokens)
+                
+                current_job_tokens.set(current_job_tokens.get() + total_tokens)
+                current_job_cost.set(current_job_cost.get() + cost)
 
-        client = self._get_client()
-        response = await client.chat.complete_async(
-            model=model,
-            messages=messages,
-            max_tokens=max_tokens,
-        )
-        return response.model_dump()
+            return response.model_dump()
+
+        return await retry_with_backoff(_call, max_retries=3, base_delay=1.0)
 
 
 mistral_client = MistralClient()
+

@@ -1,6 +1,7 @@
 import redis.asyncio as redis
 import asyncio
 from typing import Optional
+import contextvars
 from ..config import get_settings
 
 settings = get_settings()
@@ -16,6 +17,10 @@ MODEL_PRICING = {
 CIRCUIT_BREAKER_THRESHOLD = settings.circuit_breaker_threshold
 DEMO_MODE_BUDGET_THRESHOLD = 2.00
 
+
+# Context variables to track tokens and cost per-request
+current_job_tokens = contextvars.ContextVar('current_job_tokens', default=0)
+current_job_cost = contextvars.ContextVar('current_job_cost', default=0.0)
 
 class BudgetProtection:
     def __init__(self):
@@ -54,6 +59,12 @@ class BudgetProtection:
         input_cost = (input_tokens / 1000) * pricing["input"]
         output_cost = (max_tokens / 1000) * pricing["output"]
 
+        return round(input_cost + output_cost, 4)
+
+    def calculate_actual_cost(self, model: str, input_tokens: int, output_tokens: int) -> float:
+        pricing = MODEL_PRICING.get(model, {"input": 0.001, "output": 0.001})
+        input_cost = (input_tokens / 1000) * pricing["input"]
+        output_cost = (output_tokens / 1000) * pricing["output"]
         return round(input_cost + output_cost, 4)
 
     async def check_request_budget(self, estimated_cost: float) -> bool:

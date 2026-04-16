@@ -1,0 +1,211 @@
+# Luminae CI/CD Pipeline
+# Runs on every push and pull request
+
+name: Luminae CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # =============================================================================
+
+  # Backend Tests (Python/FastAPI)
+  # =============================================================================
+  backend-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Cache uv
+        uses: astral-sh/uv-cache-action@v1
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system -r apps/api/requirements.txt
+          uv pip install --system pytest pytest-asyncio pytest-cov
+
+      - name: Run backend tests
+        working-directory: apps/api
+        run: |
+          pytest tests/ -v --tb=short --cov=src --cov-report=xml
+        env:
+          LUMINAE_MISTRAL_API_KEY: test_key_for_ci
+          LUMINAE_MISTRAL_BUDGET_USD: 15.00
+          LUMINAE_UPSTASH_REDIS_REST_URL: https://test.upstash.io
+          LUMINAE_UPSTASH_REDIS_REST_TOKEN: test_token
+          LUMINAE_SUPABASE_URL: https://test.supabase.co
+          LUMINAE_SUPABASE_ANON_KEY: test_anon_key
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./apps/api/coverage.xml
+          flags: backend
+
+  # =============================================================================
+
+  # Frontend Tests (Node.js/Next.js)
+  # =============================================================================
+  frontend-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript type check
+        run: pnpm typecheck
+
+      - name: ESLint
+        run: pnpm lint || true
+
+      - name: Build Next.js
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://test.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: test_anon_key
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+
+  # =============================================================================
+
+  # Lint & Format Checks
+  # =============================================================================
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Python linting
+        working-directory: apps/api
+        run: |
+          ruff check src/ --output-format=github
+          ruff format --check src/
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm lint
+        run: pnpm lint || true
+
+  # =============================================================================
+
+  # Docker Build (Verify Dockerfile works)
+  # =============================================================================
+  docker-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API Docker image
+        working-directory: apps/api
+        run: docker build -t luminae-api:test .
+
+      - name: Build Web Docker image
+        working-directory: apps/web
+        run: docker build -t luminae-web:test .
+
+  # =============================================================================
+
+  # Security Scan
+  # =============================================================================
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Bandit security scan (Python)
+        uses: bandit/Bandit security scanner
+        with:
+          directory: apps/api/src
+          level: 5
+
+      - name: Run npm audit (JavaScript)
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: 'javascript'
+          queries: security-extended
+
+  # =============================================================================
+
+  # Deploy to Staging (only on develop branch)
+  # =============================================================================
+  deploy-staging:
+    needs: [backend-test, frontend-test, lint, docker-build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: Deploy to Render staging
+        run: echo "Deploying to staging..."
+        # Add actual deploy commands here
+
+  # =============================================================================
+
+  # Deploy to Production (only on main branch)
+  # =============================================================================
+  deploy-production:
+    needs: [backend-test, frontend-test, lint, docker-build, security]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to production
+        run: echo "Deploying to production..."
+        # Add actual deploy commands here
+
+# =============================================================================
+# Environment Variables for Testing
+# =============================================================================
+env:
+  LUMINAE_ENV: test
+  LUMINAE_MAX_REQUEST_USD: 0.50
+  LUMINAE_CIRCUIT_BREAKER_THRESHOLD: 0.01

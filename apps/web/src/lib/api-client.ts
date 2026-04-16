@@ -107,6 +107,16 @@ class ApiClient {
     })
   }
 
+  async compare(jobIds: string[]): Promise<AnalysisJob> {
+    return this.request('/api/v1/compare', {
+      method: 'POST',
+      timeoutMs: 180000,
+      body: JSON.stringify({
+        job_ids: jobIds,
+      }),
+    })
+  }
+
   async getStatus(jobId: string): Promise<AnalysisJob> {
     return this.request(`/api/v1/status/${jobId}`)
   }
@@ -121,6 +131,22 @@ class ApiClient {
 
   async healthCheck(): Promise<{ status: string }> {
     return this.request('/health')
+  }
+
+  async chat(
+    message: string,
+    conversationHistory: { role: string; content: string }[],
+    paperId?: string
+  ): Promise<{ reply: string; tokens_used?: number }> {
+    return this.request('/api/v1/chat', {
+      method: 'POST',
+      timeoutMs: 30000,
+      body: JSON.stringify({
+        message,
+        paper_id: paperId || null,
+        conversation_history: conversationHistory,
+      }),
+    })
   }
 }
 

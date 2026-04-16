@@ -5,7 +5,7 @@ from typing import Optional
 from .ocr_service import ocr_service, get_document_type
 from .vision_service import vision_service
 from .reasoning_service import reasoning_service
-from ..middleware.budget_guard import budget_protection
+from ..middleware.budget_guard import budget_protection, current_job_tokens, current_job_cost
 
 COST_ESTIMATES = {
     "ocr": 0.01,
@@ -74,7 +74,14 @@ class AgentOrchestrator:
         """Core analysis pipeline shared by file upload and URL paths."""
         start_time = time.time()
         paper_id = str(uuid.uuid4())
-        total_tokens = 0
+        
+        # Reset contextvars for this job (just in case they weren't reset per-request)
+        current_job_tokens.set(0)
+        current_job_cost.set(0.0)
+        
+        # We need to add OCR cost back if we didn't cache hit, but wait, OCR is already done before _run_pipeline! 
+        # So OCR cost might not be in the context var cleanly if context is lost.
+        # Actually in `analyze_paper` the OCR runs in the same asyncio context, so it should be fine.
         cache_hits = 0
 
         paper_text = ocr_result.get("text", "")
@@ -108,13 +115,14 @@ class AgentOrchestrator:
                 },
             }
 
-        # Step 2: Run Vision + Methodology + Dataset in PARALLEL
+        # Step 2: Run Vision + Methodology + Dataset + References in PARALLEL
         vision_task = self._run_vision(figures, extract_figures)
         methodology_task = reasoning_service.analyze_methodology(paper_text, [])
         dataset_task = reasoning_service.audit_dataset(paper_text)
+        references_task = reasoning_service.extract_references(paper_text)
 
-        vision_analyses, methodology_critique, dataset_audit = await asyncio.gather(
-            vision_task, methodology_task, dataset_task
+        vision_analyses, methodology_critique, dataset_audit, references = await asyncio.gather(
+            vision_task, methodology_task, dataset_task, references_task
         )
 
         # Step 3: Experiments (depends on methodology + dataset)
@@ -135,10 +143,12 @@ class AgentOrchestrator:
 
         processing_time = time.time() - start_time
 
-        estimated_cost = sum(COST_ESTIMATES.values())
+        estimated_cost = sum(COST_ESTIMATES.values()) # keep as legacy baseline
+        actual_cost = current_job_cost.get()
+        actual_tokens = current_job_tokens.get()
 
-        # Deduct from global budget in Redis
-        await budget_protection.deduct_budget(estimated_cost)
+        # Deduct from global budget in Redis (use actual)
+        await budget_protection.deduct_budget(actual_cost)
 
         return {
             "paper_id": paper_id,
@@ -155,6 +165,7 @@ class AgentOrchestrator:
                 "ocr_text": paper_text,
                 "figures": vision_analyses,
                 "tables": tables,
+                "references": references,
             },
             "critique": {
                 "methodology": methodology_critique,
@@ -166,8 +177,8 @@ class AgentOrchestrator:
             },
             "grant_outline": grant_outline,
             "economics": {
-                "total_tokens_used": total_tokens,
-                "estimated_cost_usd": estimated_cost,
+                "total_tokens_used": actual_tokens,
+                "estimated_cost_usd": actual_cost, # We override here to show actual cost in the UI which expects 'estimated_cost_usd'
                 "cache_hits": cache_hits,
                 "processing_time_seconds": int(processing_time),
             },

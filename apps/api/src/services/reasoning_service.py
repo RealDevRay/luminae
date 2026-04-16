@@ -1,6 +1,9 @@
 import json
+import logging
 from typing import Optional
 from .mistral_client import mistral_client
+
+logger = logging.getLogger("luminae.reasoning")
 
 AGENT_SYSTEM_PROMPTS = {
     "methodology_critic": """You are Dr. Elena Vasquez, a senior research methodologist with 20 years in peer review. Analyze the methodology section for:
@@ -60,6 +63,25 @@ CRITICAL OUTPUT RULES:
 
 Output this exact JSON schema:
 {"title": "plain text grant title", "specific_aims": ["plain text aim 1", "plain text aim 2", "plain text aim 3"], "research_strategy": "plain text research strategy paragraph", "expected_outcomes": "plain text expected outcomes paragraph", "timeline": "plain text timeline (e.g. 3 years)", "budget_estimate": "plain text budget estimate"}""",
+
+    "reference_extractor": """You are an expert academic librarian. Your task is to extract up to 15 of the most important references/citations from the provided text.
+Look for a 'References' or 'Bibliography' section, or inline citations if a formal section is missing.
+
+CRITICAL OUTPUT RULES:
+- Output ONLY valid JSON, no markdown, no commentary.
+- Do NOT use markdown.
+
+Output this exact JSON schema (list of objects):
+[{"authors": "plain text authors", "year": "YYYY or unknown", "title": "plain text title", "venue": "journal/conference name or unknown", "doi": "doi string or unknown"}]""",
+
+    "comparison_agent": """You are Dr. Aris Thorne, a senior research synthesis expert. Compare multiple research papers based on their methodologies, constraints, and findings.
+
+CRITICAL OUTPUT RULES:
+- Output ONLY valid JSON, no markdown, no commentary before or after the JSON.
+- Do NOT use markdown.
+
+Output this exact JSON schema:
+{"synthesis_summary": "plain text summary of the comparison", "methodology_comparison": [{"paper_id": "id", "strengths": ["..."], "weaknesses": ["..."]}], "shared_gaps": ["..."], "divergent_conclusions": ["..."], "recommendation": "plain text recommendation for future work unifying these studies"}"""
 }
 
 
@@ -72,6 +94,8 @@ class ReasoningService:
             "experiment_designer": 2500,
             "synthesis_agent": 2000,
             "grant_generator": 4000,
+            "reference_extractor": 2000,
+            "comparison_agent": 3000,
         }
 
     async def analyze_methodology(self, paper_text, figure_analyses):
@@ -80,7 +104,7 @@ class ReasoningService:
             "methodology_critic",
             [{"role": "user", "content": context}],
         )
-        return self._parse_json(response)
+        return self._parse_json(response, agent_name="methodology_critic")
 
     async def audit_dataset(self, paper_text):
         prompt = f"Analyze the dataset description in this paper:\n\n{paper_text[:8000]}"
@@ -88,7 +112,7 @@ class ReasoningService:
             "dataset_auditor",
             [{"role": "user", "content": prompt}],
         )
-        return self._parse_json(response)
+        return self._parse_json(response, agent_name="dataset_auditor")
 
     async def design_experiments(self, paper_text, methodology_critique, dataset_audit):
         context = f"""Paper text:\n{paper_text[:5000]}\n\n
@@ -99,7 +123,7 @@ Dataset audit:\n{json.dumps(dataset_audit)}"""
             "experiment_designer",
             [{"role": "user", "content": context}],
         )
-        return self._parse_json_list(response)
+        return self._parse_json_list(response, agent_name="experiment_designer")
 
     async def synthesize(self, methodology_critique, dataset_audit, experiments):
         context = f"""Methodology: {json.dumps(methodology_critique)}
@@ -110,7 +134,7 @@ Experiments: {json.dumps(experiments)}"""
             "synthesis_agent",
             [{"role": "user", "content": context}],
         )
-        return self._parse_json(response)
+        return self._parse_json(response, agent_name="synthesis_agent")
 
     async def generate_grant(self, synthesis, experiments):
         context = f"""Synthesis: {json.dumps(synthesis)}
@@ -120,7 +144,27 @@ Proposed experiments: {json.dumps(experiments)}"""
             "grant_generator",
             [{"role": "user", "content": context}],
         )
-        return self._parse_json(response)
+        return self._parse_json(response, agent_name="grant_generator")
+
+    async def extract_references(self, paper_text):
+        # We only need the end of the paper usually, but for short ones give whole.
+        # References are usually at the end.
+        text_chunk = paper_text[-15000:] if len(paper_text) > 15000 else paper_text
+        prompt = f"Extract the references from this document:\n\n{text_chunk}"
+        response = await self._call_agent(
+            "reference_extractor",
+            [{"role": "user", "content": prompt}],
+        )
+        return self._parse_json_list(response, agent_name="reference_extractor")
+
+    async def compare_papers(self, papers_data: dict):
+        # papers_data maps job_id -> paper payload (methodologies, summaries etc)
+        context = f"Please synthesize the following papers. Data:\n\n{json.dumps(papers_data)[:12000]}"
+        response = await self._call_agent(
+            "comparison_agent",
+            [{"role": "user", "content": context}],
+        )
+        return self._parse_json(response, agent_name="comparison_agent")
 
     async def _call_agent(self, agent_name, messages):
         system_prompt = AGENT_SYSTEM_PROMPTS.get(agent_name, "")
@@ -149,25 +193,65 @@ Proposed experiments: {json.dumps(experiments)}"""
 
         return f"Analyze this paper's methodology:\n\n{paper_text[:10000]}{figures_context}"
 
-    def _parse_json(self, content):
+    def _parse_json(self, content: str, agent_name: str = "unknown") -> dict:
+        """Parse JSON from agent response with fallback recovery and logging."""
+        original_content = content
         try:
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0]
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0]
             return json.loads(content.strip())
-        except (json.JSONDecodeError, Exception):
-            return {}
+        except json.JSONDecodeError as e:
+            logger.warning(
+                f"[{agent_name}] JSON parse failed: {e}. "
+                f"Raw content (first 500 chars): {original_content[:500]}"
+            )
+            # Attempt recovery: find first { and last }
+            try:
+                start = original_content.index("{")
+                end = original_content.rindex("}") + 1
+                return json.loads(original_content[start:end])
+            except (ValueError, json.JSONDecodeError):
+                pass
 
-    def _parse_json_list(self, content):
+            return {
+                "_parse_error": True,
+                "_error_message": f"Agent '{agent_name}' returned unparseable output",
+                "_raw_preview": original_content[:300],
+            }
+
+    def _parse_json_list(self, content: str, agent_name: str = "unknown") -> list:
+        """Parse JSON array from agent response with fallback recovery and logging."""
+        original_content = content
         try:
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0]
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0]
-            return json.loads(content.strip())
-        except (json.JSONDecodeError, Exception):
-            return []
+            result = json.loads(content.strip())
+            if isinstance(result, list):
+                return result
+            if isinstance(result, dict) and "experiments" in result:
+                return result["experiments"]
+            return [result]
+        except json.JSONDecodeError as e:
+            logger.warning(
+                f"[{agent_name}] JSON list parse failed: {e}. "
+                f"Raw content (first 500 chars): {original_content[:500]}"
+            )
+            # Attempt recovery: find first [ and last ]
+            try:
+                start = original_content.index("[")
+                end = original_content.rindex("]") + 1
+                return json.loads(original_content[start:end])
+            except (ValueError, json.JSONDecodeError):
+                pass
+
+            return [{
+                "_parse_error": True,
+                "_error_message": f"Agent '{agent_name}' returned unparseable output",
+            }]
 
 
 reasoning_service = ReasoningService()

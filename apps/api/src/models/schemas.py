@@ -23,6 +23,7 @@ class AnalysisJob(BaseModel):
         "processing_ocr",
         "processing_vision",
         "analyzing",
+        "synthesizing",
         "complete",
         "error",
     ] = "uploaded"
@@ -33,6 +34,10 @@ class AnalysisJob(BaseModel):
     analysis: Optional[dict] = None
     error_message: Optional[str] = None
     economics: Optional[dict] = None
+
+
+class CompareRequest(BaseModel):
+    job_ids: list[str] = Field(..., min_length=2, max_length=5)
 
 
 class BudgetInfo(BaseModel):
