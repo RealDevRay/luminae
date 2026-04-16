@@ -29,6 +29,15 @@ export interface BudgetInfo {
   is_demo_mode: boolean
 }
 
+export class ApiError extends Error {
+  status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 class ApiClient {
   private baseUrl: string
 
@@ -60,7 +69,7 @@ class ApiClient {
 
       if (!response.ok) {
         const error = await response.text()
-        throw new Error(`API Error: ${response.status} - ${error}`)
+        throw new ApiError(response.status, `API Error: ${response.status} - ${error}`)
       }
 
       return await response.json()

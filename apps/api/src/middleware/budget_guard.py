@@ -30,38 +30,48 @@ class BudgetProtection:
     def __init__(self):
         self._redis: redis.Redis | None = None
 
-    async def get_redis(self) -> redis.Redis:
-        if self._redis is None:
+    async def get_redis(self) -> redis.Redis | None:
+        # If we have a cached connection, verify it's still alive
+        if self._redis is not None:
             try:
-                url = settings.upstash_redis_rest_url
-                if not url:
-                    logger.error(
-                        "UPSTASH_REDIS_REST_URL is not configured — Redis persistence disabled"
-                    )
-                    return None
-
-                token = settings.upstash_redis_rest_token
-
-                # Embed password into URL if not already present
-                if token and "@" not in url:
-                    # Convert redis://host:port -> redis://default:PASSWORD@host:port
-                    url = url.replace("redis://", f"redis://default:{token}@", 1)
-                    url = url.replace("rediss://", f"rediss://default:{token}@", 1)
-
-                use_ssl = url.startswith("rediss://")
-                self._redis = redis.from_url(
-                    url,
-                    decode_responses=True,
-                    socket_connect_timeout=3,
-                    socket_timeout=3,
-                    ssl=use_ssl,
-                )
-                await self._redis.ping()
-                logger.info("Redis connection established")
-            except Exception as e:
-                logger.error(f"Redis connection failed: {e}")
+                await asyncio.wait_for(self._redis.ping(), timeout=2)
+                return self._redis
+            except Exception:
+                logger.warning("Redis connection dropped — attempting to reconnect")
                 self._redis = None
+
+        # Establish a new connection
+        try:
+            url = settings.upstash_redis_rest_url
+            if not url:
+                logger.error(
+                    "UPSTASH_REDIS_REST_URL is not configured — Redis persistence disabled"
+                )
                 return None
+
+            token = settings.upstash_redis_rest_token
+
+            # Embed password into URL if not already present
+            if token and "@" not in url:
+                # Convert redis://host:port -> redis://default:PASSWORD@host:port
+                url = url.replace("redis://", f"redis://default:{token}@", 1)
+                url = url.replace("rediss://", f"rediss://default:{token}@", 1)
+
+            use_ssl = url.startswith("rediss://")
+            self._redis = redis.from_url(
+                url,
+                decode_responses=True,
+                socket_connect_timeout=3,
+                socket_timeout=3,
+                ssl=use_ssl,
+            )
+            await self._redis.ping()
+            logger.info("Redis connection established")
+        except Exception as e:
+            logger.error(f"Redis connection failed: {e}")
+            self._redis = None
+            return None
+
         return self._redis
 
     def estimate_cost(self, model: str, input_text: str, max_tokens: int) -> float:

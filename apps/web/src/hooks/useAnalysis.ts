@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { apiClient, AnalysisJob } from '@/lib/api-client'
+import { apiClient, ApiError, AnalysisJob } from '@/lib/api-client'
 import { useAnalysisStore } from '@/stores/analysisStore'
 
 export function useUpload() {
@@ -148,8 +148,13 @@ export function useAnalysis(jobId: string) {
           } else if (res.status !== 'complete') {
             setError('Live updates disconnected. Click Retry to continue polling status.')
           }
-        }).catch(() => {
-          setError('Connection lost. The server may be restarting — click Retry.')
+        }).catch((err) => {
+          const is404 = (err instanceof ApiError && err.status === 404) || err?.message?.includes('404')
+          if (is404) {
+            setError('Analysis not found. It may have expired or been deleted.')
+          } else {
+            setError('Connection lost. The server may be restarting — click Retry.')
+          }
           setIsLoading(false)
         })
         return
@@ -177,7 +182,8 @@ export function useAnalysis(jobId: string) {
           scheduleReconnect()
         }
       }).catch((err) => {
-        if (err?.status === 404 || err?.message?.includes('404')) {
+        const is404 = (err instanceof ApiError && err.status === 404) || err?.message?.includes('404')
+        if (is404) {
           setError('Analysis not found. It may have expired or been deleted.')
           setIsLoading(false)
           return
@@ -240,7 +246,10 @@ export function useAnalysis(jobId: string) {
 
         setAnalysis(data)
         setIsLoading(false)
-        reconnectAttemptsRef.current = 0
+        // Only reset reconnect counter on complete data, not every message
+        if (data.status === 'complete') {
+          reconnectAttemptsRef.current = 0
+        }
 
         if (data.status === 'complete') {
           try {
@@ -277,6 +286,14 @@ export function useAnalysis(jobId: string) {
       clearTimers()
       eventSource.close()
 
+      // Count this attempt against the global circuit breaker
+      totalFetchAttemptsRef.current++
+      if (totalFetchAttemptsRef.current > 15) {
+        setError('Too many failed attempts. Please reload the page.')
+        setIsLoading(false)
+        return
+      }
+
       apiClient.getResults(jobId).then(res => {
         setAnalysis(res)
         if (res.status === 'complete' && res.analysis) {
@@ -286,7 +303,8 @@ export function useAnalysis(jobId: string) {
         }
         scheduleReconnect()
       }).catch((err) => {
-        if (err?.status === 404 || err?.message?.includes('404')) {
+        const is404 = (err instanceof ApiError && err.status === 404) || err?.message?.includes('404')
+        if (is404) {
           setError('Analysis not found. It may have expired or been deleted.')
           setIsLoading(false)
           return
