@@ -1,12 +1,13 @@
+import asyncio
+import base64
 import hashlib
 import json
 import os
-import base64
-from typing import Optional
+
 from mistralai import Mistral
+
 from ..config import get_settings
 from ..middleware.budget_guard import budget_protection
-import asyncio
 
 settings = get_settings()
 
@@ -79,9 +80,7 @@ class OCRService:
         await self._cache_ocr(url_hash, final_result)
         return final_result
 
-    async def process_pdf(
-        self, file_content: bytes, filename: str
-    ) -> dict:
+    async def process_pdf(self, file_content: bytes, filename: str) -> dict:
         client = self._get_client()
         file_hash = self.compute_hash(file_content)
 
@@ -182,12 +181,14 @@ class OCRService:
             for img in images:
                 if "image_base64" in img:
                     figure_id += 1
-                    figures.append({
-                        "id": f"fig-{figure_id}",
-                        "type": "image",
-                        "base64": img["image_base64"],
-                        "page": page.get("index", 0),
-                    })
+                    figures.append(
+                        {
+                            "id": f"fig-{figure_id}",
+                            "type": "image",
+                            "base64": img["image_base64"],
+                            "page": page.get("index", 0),
+                        }
+                    )
 
         return figures
 
@@ -201,17 +202,19 @@ class OCRService:
             if page_tables:
                 for tbl in page_tables:
                     table_id += 1
-                    tables.append({
-                        "id": f"table-{table_id}",
-                        "caption": tbl.get("caption", ""),
-                        "data": tbl.get("data", []),
-                        "rows": len(tbl.get("data", [])),
-                        "columns": len(tbl.get("data", [[]])[0]) if tbl.get("data") else 0,
-                    })
+                    tables.append(
+                        {
+                            "id": f"table-{table_id}",
+                            "caption": tbl.get("caption", ""),
+                            "data": tbl.get("data", []),
+                            "rows": len(tbl.get("data", [])),
+                            "columns": len(tbl.get("data", [[]])[0]) if tbl.get("data") else 0,
+                        }
+                    )
 
         return tables
 
-    async def _get_cached_ocr(self, file_hash: str) -> Optional[dict]:
+    async def _get_cached_ocr(self, file_hash: str) -> dict | None:
         try:
             redis_client = await asyncio.wait_for(budget_protection.get_redis(), timeout=3)
             if redis_client:
@@ -233,4 +236,3 @@ class OCRService:
 
 
 ocr_service = OCRService()
-

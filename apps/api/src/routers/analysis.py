@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -24,7 +25,9 @@ router = APIRouter(prefix="/api/v1", tags=["analysis"])
 security = HTTPBearer(auto_error=False)
 
 
-def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+def get_current_user_id(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
+) -> str:
     if not credentials:
         return "guest_user"
 
@@ -36,7 +39,7 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
         if not user_res or not user_res.user:
             return "guest_user"
         return user_res.user.id
-    except Exception as e:
+    except Exception:
         return "guest_user"
 
 
@@ -66,7 +69,7 @@ async def run_analysis(job_id: str, request: AnalysisRequest, user_id: str):
                         await redis_client.setex(
                             f"job:{job_id}:pdf_payload", 86400 * 7, file_content
                         )
-                except Exception as e:
+                except Exception:
                     return
             else:
                 return
@@ -97,7 +100,7 @@ async def run_analysis(job_id: str, request: AnalysisRequest, user_id: str):
                     ).execute()
 
                 await asyncio.to_thread(save_initial)
-            except Exception as e:
+            except Exception:
                 pass
 
         if is_url_mode:
@@ -512,7 +515,7 @@ async def reanalyze(job_id: str, user_id: str = Depends(get_current_user_id)):
     if original.get("extraction", {}).get("ocr_text"):
         paper_text = original["extraction"]["ocr_text"]
         figures = original["extraction"].get("figures", [])
-        tables = original["extraction"].get("tables", [])
+        original["extraction"].get("tables", [])  # tables available but unused
 
         from ..services.reasoning_service import reasoning_service
 

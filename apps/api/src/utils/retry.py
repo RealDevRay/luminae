@@ -1,7 +1,8 @@
 import asyncio
-import random
 import logging
-from typing import Any, Callable
+import random
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger("luminae.retry")
 
@@ -36,7 +37,7 @@ async def retry_with_backoff(
                 break
 
             # Exponential backoff with full jitter
-            delay = min(base_delay * (2 ** attempt), max_delay)
+            delay = min(base_delay * (2**attempt), max_delay)
             jitter = random.uniform(0, delay)
             logger.warning(
                 f"[Retry] Attempt {attempt + 1}/{max_retries} failed: {e}. "

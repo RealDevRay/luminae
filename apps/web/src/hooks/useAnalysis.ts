@@ -107,6 +107,7 @@ export function useAnalysis(jobId: string) {
   const { saveAnalysis } = useAnalysisStore()
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   const reconnectAttemptsRef = useRef(0)
+  const totalFetchAttemptsRef = useRef(0)
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const maxReconnectAttempts = 6
@@ -131,6 +132,13 @@ export function useAnalysis(jobId: string) {
     setError(null)
 
     const scheduleReconnect = () => {
+      totalFetchAttemptsRef.current++
+      if (totalFetchAttemptsRef.current > 15) {
+        setError('Too many failed attempts. Please reload the page.')
+        setIsLoading(false)
+        return
+      }
+
       if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
         apiClient.getResults(jobId).then(res => {
           setAnalysis(res)
@@ -168,14 +176,55 @@ export function useAnalysis(jobId: string) {
         } else {
           scheduleReconnect()
         }
-      }).catch(() => {
+      }).catch((err) => {
+        if (err?.status === 404 || err?.message?.includes('404')) {
+          setError('Analysis not found. It may have expired or been deleted.')
+          setIsLoading(false)
+          return
+        }
         scheduleReconnect()
       })
     }, streamTimeoutMs)
 
-    eventSource.onopen = () => {
-      reconnectAttemptsRef.current = 0
-    }
+    eventSource.addEventListener('error', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data)
+        setError(data.error || data.error_message || 'Analysis failed')
+        setIsLoading(false)
+        clearTimers()
+        eventSource.close()
+      } catch {
+        // Browser-level error, let onerror handle it
+      }
+    })
+
+    eventSource.addEventListener('complete', async (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data)
+        clearTimers()
+        try {
+          const fullResponse = await apiClient.getResults(jobId)
+          setAnalysis(fullResponse)
+          if (fullResponse.analysis) {
+            saveAnalysis(jobId, fullResponse.analysis)
+          }
+        } catch {
+          if (data.analysis) {
+            saveAnalysis(jobId, data.analysis)
+          }
+        }
+        setIsLoading(false)
+        eventSource.close()
+      } catch {
+        // ignore parse errors
+      }
+    })
+
+    eventSource.addEventListener('timeout', (event: MessageEvent) => {
+      clearTimers()
+      eventSource.close()
+      scheduleReconnect()
+    })
 
     eventSource.onmessage = async (event) => {
       try {
@@ -191,6 +240,7 @@ export function useAnalysis(jobId: string) {
 
         setAnalysis(data)
         setIsLoading(false)
+        reconnectAttemptsRef.current = 0
 
         if (data.status === 'complete') {
           try {
@@ -235,7 +285,12 @@ export function useAnalysis(jobId: string) {
           return
         }
         scheduleReconnect()
-      }).catch(() => {
+      }).catch((err) => {
+        if (err?.status === 404 || err?.message?.includes('404')) {
+          setError('Analysis not found. It may have expired or been deleted.')
+          setIsLoading(false)
+          return
+        }
         scheduleReconnect()
       })
     }
@@ -263,6 +318,7 @@ export function useAnalysis(jobId: string) {
 
   const retry = useCallback(() => {
     reconnectAttemptsRef.current = 0
+    totalFetchAttemptsRef.current = 0
     clearTimers()
     setError(null)
     setIsLoading(true)

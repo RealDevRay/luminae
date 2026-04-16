@@ -1,13 +1,13 @@
 import logging
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import StreamingResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+from fastapi import APIRouter, HTTPException
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel
-from typing import Optional
-from ..services.mistral_client import mistral_client
-from ..services.job_store import job_store
-from ..middleware.budget_guard import budget_protection
+
 from ..config import get_settings
+from ..middleware.budget_guard import budget_protection
+from ..services.job_store import job_store
+from ..services.mistral_client import mistral_client
 
 logger = logging.getLogger("luminae.chat")
 settings = get_settings()
@@ -18,13 +18,13 @@ security = HTTPBearer(auto_error=False)
 
 class ChatRequest(BaseModel):
     message: str
-    paper_id: Optional[str] = None
+    paper_id: str | None = None
     conversation_history: list[dict] = []
 
 
 class ChatResponse(BaseModel):
     reply: str
-    tokens_used: Optional[int] = None
+    tokens_used: int | None = None
 
 
 SYSTEM_PROMPT_WITH_PAPER = """You are Luminae's AI research assistant. You have deep expertise in academic research methodology, statistics, and scientific writing.
@@ -60,7 +60,7 @@ About Luminae:
 Keep responses concise, helpful, and focused on research quality."""
 
 
-async def _get_paper_context(paper_id: str) -> Optional[str]:
+async def _get_paper_context(paper_id: str) -> str | None:
     """Load the paper's OCR text from the job store for context-aware chat."""
     if not paper_id:
         return None
@@ -105,10 +105,12 @@ async def chat_with_paper(request: ChatRequest):
     # Add conversation history (last 10 messages to stay within context)
     for msg in request.conversation_history[-10:]:
         if msg.get("role") in ("user", "assistant") and msg.get("content"):
-            messages.append({
-                "role": msg["role"],
-                "content": msg["content"][:1000],  # Truncate long history messages
-            })
+            messages.append(
+                {
+                    "role": msg["role"],
+                    "content": msg["content"][:1000],  # Truncate long history messages
+                }
+            )
 
     # Add current message
     messages.append({"role": "user", "content": request.message})
@@ -125,7 +127,9 @@ async def chat_with_paper(request: ChatRequest):
         tokens_used = response.get("usage", {}).get("total_tokens")
 
         if not reply:
-            reply = "I'm sorry, I couldn't generate a response. Please try rephrasing your question."
+            reply = (
+                "I'm sorry, I couldn't generate a response. Please try rephrasing your question."
+            )
 
         # Track cost
         await budget_protection.deduct_budget(0.002)
@@ -137,4 +141,4 @@ async def chat_with_paper(request: ChatRequest):
         raise HTTPException(
             status_code=500,
             detail="Failed to generate response. Please try again.",
-        )
+        ) from e

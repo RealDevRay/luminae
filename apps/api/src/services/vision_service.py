@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+
 from .mistral_client import mistral_client
 
 VISION_CONFIG = {
@@ -60,29 +60,27 @@ class VisionService:
                 max_tokens=1000,
             )
 
-            content = response.get("choices", [{}])[0].get("message", {}).get(
-                "content", ""
-            )
+            content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
 
             parsed = self._parse_json_response(content, len(batch))
 
             results = []
             for i, fig in enumerate(batch):
                 analysis = parsed[i] if i < len(parsed) else {}
-                results.append({
-                    "id": fig.get("id", f"fig-{i}"),
-                    "type": analysis.get("figure_type", "unknown"),
-                    "description": analysis.get("key_trends", ""),
-                    "key_data_trends": analysis.get("key_trends", ""),
-                    "statistical_significance": analysis.get(
-                        "statistical_significance", ""
-                    ),
-                    "alternative_interpretations": analysis.get(
-                        "alternative_interpretations", []
-                    ),
-                    "confidence": analysis.get("confidence", 0.5),
-                    "base64_image": fig.get("base64", ""),
-                })
+                results.append(
+                    {
+                        "id": fig.get("id", f"fig-{i}"),
+                        "type": analysis.get("figure_type", "unknown"),
+                        "description": analysis.get("key_trends", ""),
+                        "key_data_trends": analysis.get("key_trends", ""),
+                        "statistical_significance": analysis.get("statistical_significance", ""),
+                        "alternative_interpretations": analysis.get(
+                            "alternative_interpretations", []
+                        ),
+                        "confidence": analysis.get("confidence", 0.5),
+                        "base64_image": fig.get("base64", ""),
+                    }
+                )
 
             return results
 

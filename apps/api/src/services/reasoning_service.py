@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Optional
+
 from .mistral_client import mistral_client
 
 logger = logging.getLogger("luminae.reasoning")
@@ -21,7 +21,6 @@ Output this exact JSON schema:
 {"flaws": [{"severity": "critical|warning|note", "category": "...", "description": "...", "section_reference": "...", "suggested_fix": "...", "impact": "..."}], "overall_score": 0-100, "reproducibility_rating": "high|medium|low", "confidence": 0.0-1.0, "key_strengths": ["..."], "critical_gaps": ["..."]}
 
 Rules: Cite specific sections, if info missing state "Not mentioned", never hallucinate.""",
-
     "dataset_auditor": """You are Dr. James Chen, data governance expert. Audit the dataset for:
 1. SIZE: Adequacy for claimed effects, power analysis mention
 2. BIAS: Selection bias, measurement bias, confirmation bias sources
@@ -35,7 +34,6 @@ CRITICAL OUTPUT RULES:
 
 Output this exact JSON schema:
 {"size_assessment": "adequate|underpowered|excessive|not_applicable", "bias_sources": ["plain text description of each bias source"], "ethical_concerns": ["plain text concern"], "recommendations": ["plain text actionable recommendation"], "missing_data_handling": "plain text assessment", "representation_issues": ["plain text issue"]}""",
-
     "experiment_designer": """You are Dr. Sarah Okonkwo, creative experimentalist. Design 3 follow-up experiments addressing paper limitations.
 Be bold but grounded. Address exact flaws found.
 
@@ -45,7 +43,6 @@ CRITICAL OUTPUT RULES:
 
 Output this exact JSON schema (array of 3 objects):
 [{"title": "plain text title", "hypothesis": "plain text falsifiable hypothesis", "method": "plain text method description (2-3 sentences)", "expected_outcome": "plain text expected outcome", "feasibility_score": 1-10, "estimated_budget": "plain text budget estimate"}]""",
-
     "synthesis_agent": """Synthesize parallel agent outputs into a unified assessment. Resolve conflicts by confidence weighting. Generate 3 key insights that would surprise the original authors.
 
 CRITICAL OUTPUT RULES:
@@ -54,7 +51,6 @@ CRITICAL OUTPUT RULES:
 
 Output this exact JSON schema:
 {"key_insights": ["plain text insight 1", "plain text insight 2", "plain text insight 3"], "unified_assessment": "plain text overall assessment paragraph", "conflicts_resolved": ["plain text description of any conflicts between agents and how they were resolved"]}""",
-
     "grant_generator": """Generate an NSF-style grant proposal outline based on the synthesis and proposed experiments.
 
 CRITICAL OUTPUT RULES:
@@ -63,7 +59,6 @@ CRITICAL OUTPUT RULES:
 
 Output this exact JSON schema:
 {"title": "plain text grant title", "specific_aims": ["plain text aim 1", "plain text aim 2", "plain text aim 3"], "research_strategy": "plain text research strategy paragraph", "expected_outcomes": "plain text expected outcomes paragraph", "timeline": "plain text timeline (e.g. 3 years)", "budget_estimate": "plain text budget estimate"}""",
-
     "reference_extractor": """You are an expert academic librarian. Your task is to extract up to 15 of the most important references/citations from the provided text.
 Look for a 'References' or 'Bibliography' section, or inline citations if a formal section is missing.
 
@@ -73,7 +68,6 @@ CRITICAL OUTPUT RULES:
 
 Output this exact JSON schema (list of objects):
 [{"authors": "plain text authors", "year": "YYYY or unknown", "title": "plain text title", "venue": "journal/conference name or unknown", "doi": "doi string or unknown"}]""",
-
     "comparison_agent": """You are Dr. Aris Thorne, a senior research synthesis expert. Compare multiple research papers based on their methodologies, constraints, and findings.
 
 CRITICAL OUTPUT RULES:
@@ -81,7 +75,7 @@ CRITICAL OUTPUT RULES:
 - Do NOT use markdown.
 
 Output this exact JSON schema:
-{"synthesis_summary": "plain text summary of the comparison", "methodology_comparison": [{"paper_id": "id", "strengths": ["..."], "weaknesses": ["..."]}], "shared_gaps": ["..."], "divergent_conclusions": ["..."], "recommendation": "plain text recommendation for future work unifying these studies"}"""
+{"synthesis_summary": "plain text summary of the comparison", "methodology_comparison": [{"paper_id": "id", "strengths": ["..."], "weaknesses": ["..."]}], "shared_gaps": ["..."], "divergent_conclusions": ["..."], "recommendation": "plain text recommendation for future work unifying these studies"}""",
 }
 
 
@@ -159,7 +153,9 @@ Proposed experiments: {json.dumps(experiments)}"""
 
     async def compare_papers(self, papers_data: dict):
         # papers_data maps job_id -> paper payload (methodologies, summaries etc)
-        context = f"Please synthesize the following papers. Data:\n\n{json.dumps(papers_data)[:12000]}"
+        context = (
+            f"Please synthesize the following papers. Data:\n\n{json.dumps(papers_data)[:12000]}"
+        )
         response = await self._call_agent(
             "comparison_agent",
             [{"role": "user", "content": context}],
@@ -177,7 +173,7 @@ Proposed experiments: {json.dumps(experiments)}"""
             messages=full_messages,
             max_tokens=max_tokens,
             temperature=0.7,
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
         )
 
         return response.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -186,8 +182,7 @@ Proposed experiments: {json.dumps(experiments)}"""
         figures_context = ""
         if figure_analyses:
             figures_summary = "\n".join(
-                f"- {fig.get('id')}: {fig.get('description', 'N/A')}"
-                for fig in figure_analyses[:5]
+                f"- {fig.get('id')}: {fig.get('description', 'N/A')}" for fig in figure_analyses[:5]
             )
             figures_context = f"\n\nFigure analyses:\n{figures_summary}"
 
@@ -248,10 +243,12 @@ Proposed experiments: {json.dumps(experiments)}"""
             except (ValueError, json.JSONDecodeError):
                 pass
 
-            return [{
-                "_parse_error": True,
-                "_error_message": f"Agent '{agent_name}' returned unparseable output",
-            }]
+            return [
+                {
+                    "_parse_error": True,
+                    "_error_message": f"Agent '{agent_name}' returned unparseable output",
+                }
+            ]
 
 
 reasoning_service = ReasoningService()

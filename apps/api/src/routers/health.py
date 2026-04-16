@@ -1,6 +1,8 @@
-from fastapi import APIRouter
-from ..models.schemas import HealthResponse
 from datetime import datetime
+
+from fastapi import APIRouter
+
+from ..models.schemas import HealthResponse
 
 router = APIRouter(tags=["health"])
 

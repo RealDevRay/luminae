@@ -1,4 +1,3 @@
-import re
 import ipaddress
 import logging
 from urllib.parse import urlparse
@@ -19,9 +18,9 @@ PRIVATE_IP_RANGES = [
     ipaddress.ip_network("127.0.0.0/8"),
     ipaddress.ip_network("169.254.0.0/16"),  # link-local
     ipaddress.ip_network("0.0.0.0/8"),
-    ipaddress.ip_network("::1/128"),          # IPv6 loopback
-    ipaddress.ip_network("fc00::/7"),         # IPv6 private
-    ipaddress.ip_network("fe80::/10"),        # IPv6 link-local
+    ipaddress.ip_network("::1/128"),  # IPv6 loopback
+    ipaddress.ip_network("fc00::/7"),  # IPv6 private
+    ipaddress.ip_network("fe80::/10"),  # IPv6 link-local
 ]
 
 BLOCKED_HOSTNAMES = {"localhost", "0.0.0.0", "127.0.0.1", "[::1]", "metadata.google.internal"}
@@ -62,13 +61,15 @@ def validate_url(url: str) -> tuple[bool, str]:
         ip = ipaddress.ip_address(hostname)
         for network in PRIVATE_IP_RANGES:
             if ip in network:
-                return False, f"Private/reserved IP addresses are not allowed"
+                return False, "Private/reserved IP addresses are not allowed"
     except ValueError:
         # Not an IP address — it's a hostname, which is fine
         pass
 
     # Block common metadata endpoints
-    if "metadata" in hostname and ("google" in hostname or "aws" in hostname or "azure" in hostname):
+    if "metadata" in hostname and (
+        "google" in hostname or "aws" in hostname or "azure" in hostname
+    ):
         return False, "Cloud metadata endpoints are not allowed"
 
     return True, ""

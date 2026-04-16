@@ -1,7 +1,7 @@
-import json
 import asyncio
+import json
 import logging
-from typing import Optional
+
 from ..middleware.budget_guard import budget_protection
 
 logger = logging.getLogger("luminae.job_store")
@@ -9,7 +9,7 @@ logger = logging.getLogger("luminae.job_store")
 
 class JobStore:
     """Persists analysis job state in Redis (fast) with Supabase (durable) fallback.
-    
+
     Replaces the in-memory dict storage that was lost on every Render restart/sleep.
     """
 
@@ -19,9 +19,7 @@ class JobStore:
     async def save_job(self, job_id: str, job_data: dict) -> None:
         """Save job metadata (status, error, economics) to Redis."""
         try:
-            redis_client = await asyncio.wait_for(
-                budget_protection.get_redis(), timeout=3
-            )
+            redis_client = await asyncio.wait_for(budget_protection.get_redis(), timeout=3)
             if redis_client:
                 key = f"{self.REDIS_PREFIX}{job_id}"
                 await asyncio.wait_for(
@@ -31,12 +29,10 @@ class JobStore:
         except Exception as e:
             logger.warning(f"Redis save failed for {job_id}: {e}")
 
-    async def get_job(self, job_id: str) -> Optional[dict]:
+    async def get_job(self, job_id: str) -> dict | None:
         """Retrieve job metadata from Redis."""
         try:
-            redis_client = await asyncio.wait_for(
-                budget_protection.get_redis(), timeout=3
-            )
+            redis_client = await asyncio.wait_for(budget_protection.get_redis(), timeout=3)
             if redis_client:
                 key = f"{self.REDIS_PREFIX}{job_id}"
                 data = await asyncio.wait_for(redis_client.get(key), timeout=3)
@@ -49,9 +45,7 @@ class JobStore:
     async def save_result(self, job_id: str, result: dict) -> None:
         """Save full analysis result to Redis."""
         try:
-            redis_client = await asyncio.wait_for(
-                budget_protection.get_redis(), timeout=3
-            )
+            redis_client = await asyncio.wait_for(budget_protection.get_redis(), timeout=3)
             if redis_client:
                 key = f"{self.REDIS_PREFIX}{job_id}:result"
                 await asyncio.wait_for(
@@ -61,12 +55,10 @@ class JobStore:
         except Exception as e:
             logger.warning(f"Redis result save failed for {job_id}: {e}")
 
-    async def get_result(self, job_id: str) -> Optional[dict]:
+    async def get_result(self, job_id: str) -> dict | None:
         """Retrieve full analysis result from Redis."""
         try:
-            redis_client = await asyncio.wait_for(
-                budget_protection.get_redis(), timeout=3
-            )
+            redis_client = await asyncio.wait_for(budget_protection.get_redis(), timeout=3)
             if redis_client:
                 key = f"{self.REDIS_PREFIX}{job_id}:result"
                 data = await asyncio.wait_for(redis_client.get(key), timeout=3)

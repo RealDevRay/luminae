@@ -1,10 +1,10 @@
-import base64
-import os
 import logging
-from typing import Optional
+import os
+
 from mistralai import Mistral
+
 from ..config import get_settings
-from ..middleware.budget_guard import budget_protection, current_job_tokens, current_job_cost
+from ..middleware.budget_guard import budget_protection, current_job_cost, current_job_tokens
 from ..utils.retry import retry_with_backoff
 
 logger = logging.getLogger("luminae.mistral_client")
@@ -25,7 +25,7 @@ class MistralClient:
         messages: list[dict],
         max_tokens: int = 2000,
         temperature: float = 0.7,
-        response_format: Optional[dict] = None,
+        response_format: dict | None = None,
     ) -> dict:
         async def _call():
             client = self._get_client()
@@ -38,17 +38,17 @@ class MistralClient:
             if response_format:
                 kwargs["response_format"] = response_format
             response = await client.chat.complete_async(**kwargs)
-            
+
             # Tally actual tokens and cost
-            if getattr(response, 'usage', None):
+            if getattr(response, "usage", None):
                 prompt_tokens = response.usage.prompt_tokens
                 comp_tokens = response.usage.completion_tokens
                 total_tokens = prompt_tokens + comp_tokens
                 cost = budget_protection.calculate_actual_cost(model, prompt_tokens, comp_tokens)
-                
+
                 current_job_tokens.set(current_job_tokens.get() + total_tokens)
                 current_job_cost.set(current_job_cost.get() + cost)
-                
+
             return response.model_dump()
 
         return await retry_with_backoff(_call, max_retries=3, base_delay=1.0)
@@ -63,7 +63,7 @@ class MistralClient:
             client = self._get_client()
             document_dict = {
                 "type": "document_url",
-                "document_url": f"data:application/pdf;base64,{document_base64}"
+                "document_url": f"data:application/pdf;base64,{document_base64}",
             }
             response = await client.ocr.process_async(
                 model="mistral-ocr-latest",
@@ -71,13 +71,15 @@ class MistralClient:
                 include_image_base64=include_image_base64,
                 table_format=table_format,
             )
-            
+
             # Tally actual tokens and cost for OCR (note: Mistral OCR might populate usage differently)
-            if getattr(response, 'usage', None) and getattr(response.usage, 'prompt_tokens', None):
+            if getattr(response, "usage", None) and getattr(response.usage, "prompt_tokens", None):
                 prompt_tokens = response.usage.prompt_tokens
-                comp_tokens = getattr(response.usage, 'completion_tokens', 0)
+                comp_tokens = getattr(response.usage, "completion_tokens", 0)
                 total_tokens = prompt_tokens + comp_tokens
-                cost = budget_protection.calculate_actual_cost("mistral-ocr-latest", prompt_tokens, comp_tokens)
+                cost = budget_protection.calculate_actual_cost(
+                    "mistral-ocr-latest", prompt_tokens, comp_tokens
+                )
                 current_job_tokens.set(current_job_tokens.get() + total_tokens)
                 current_job_cost.set(current_job_cost.get() + cost)
 
@@ -111,14 +113,14 @@ class MistralClient:
                 messages=messages,
                 max_tokens=max_tokens,
             )
-            
+
             # Tally actual tokens and cost
-            if getattr(response, 'usage', None):
+            if getattr(response, "usage", None):
                 prompt_tokens = response.usage.prompt_tokens
                 comp_tokens = response.usage.completion_tokens
                 total_tokens = prompt_tokens + comp_tokens
                 cost = budget_protection.calculate_actual_cost(model, prompt_tokens, comp_tokens)
-                
+
                 current_job_tokens.set(current_job_tokens.get() + total_tokens)
                 current_job_cost.set(current_job_cost.get() + cost)
 
@@ -128,4 +130,3 @@ class MistralClient:
 
 
 mistral_client = MistralClient()
-

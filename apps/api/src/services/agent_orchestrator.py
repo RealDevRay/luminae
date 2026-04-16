@@ -1,11 +1,11 @@
-import uuid
-import time
 import asyncio
-from typing import Optional
-from .ocr_service import ocr_service, get_document_type
-from .vision_service import vision_service
+import time
+import uuid
+
+from ..middleware.budget_guard import budget_protection, current_job_cost, current_job_tokens
+from .ocr_service import get_document_type, ocr_service
 from .reasoning_service import reasoning_service
-from ..middleware.budget_guard import budget_protection, current_job_tokens, current_job_cost
+from .vision_service import vision_service
 
 COST_ESTIMATES = {
     "ocr": 0.01,
@@ -74,12 +74,12 @@ class AgentOrchestrator:
         """Core analysis pipeline shared by file upload and URL paths."""
         start_time = time.time()
         paper_id = str(uuid.uuid4())
-        
+
         # Reset contextvars for this job (just in case they weren't reset per-request)
         current_job_tokens.set(0)
         current_job_cost.set(0.0)
-        
-        # We need to add OCR cost back if we didn't cache hit, but wait, OCR is already done before _run_pipeline! 
+
+        # We need to add OCR cost back if we didn't cache hit, but wait, OCR is already done before _run_pipeline!
         # So OCR cost might not be in the context var cleanly if context is lost.
         # Actually in `analyze_paper` the OCR runs in the same asyncio context, so it should be fine.
         cache_hits = 0
@@ -137,13 +137,11 @@ class AgentOrchestrator:
 
         grant_outline = {}
         if generate_grant:
-            grant_outline = await reasoning_service.generate_grant(
-                synthesis, experiments
-            )
+            grant_outline = await reasoning_service.generate_grant(synthesis, experiments)
 
         processing_time = time.time() - start_time
 
-        estimated_cost = sum(COST_ESTIMATES.values()) # keep as legacy baseline
+        _ = sum(COST_ESTIMATES.values())  # legacy baseline (unused)
         actual_cost = current_job_cost.get()
         actual_tokens = current_job_tokens.get()
 
@@ -178,7 +176,7 @@ class AgentOrchestrator:
             "grant_outline": grant_outline,
             "economics": {
                 "total_tokens_used": actual_tokens,
-                "estimated_cost_usd": actual_cost, # We override here to show actual cost in the UI which expects 'estimated_cost_usd'
+                "estimated_cost_usd": actual_cost,  # We override here to show actual cost in the UI which expects 'estimated_cost_usd'
                 "cache_hits": cache_hits,
                 "processing_time_seconds": int(processing_time),
             },
@@ -190,10 +188,20 @@ class AgentOrchestrator:
             return await vision_service.analyze_figures(figures)
         return []
 
-    def _extract_title(self, text: str) -> Optional[str]:
+    def _extract_title(self, text: str) -> str | None:
         """Extract title from OCR text, filtering out HTML and metadata lines."""
         lines = text.strip().split("\n")
-        html_indicators = ["<!doctype", "<html", "<head", "<body", "<meta", "<script", "<link", "<style", "<div"]
+        html_indicators = [
+            "<!doctype",
+            "<html",
+            "<head",
+            "<body",
+            "<meta",
+            "<script",
+            "<link",
+            "<style",
+            "<div",
+        ]
         for line in lines[:10]:
             line = line.strip()
             if not line or len(line) < 5 or len(line) > 200:
