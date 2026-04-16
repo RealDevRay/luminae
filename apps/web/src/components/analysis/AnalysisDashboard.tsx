@@ -36,6 +36,15 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
     }
   }, [connectSSE])
 
+  // Must be before early returns to maintain consistent hook ordering
+  const isComparison = !!analysis?.analysis?.comparison
+  useEffect(() => {
+    if (isComparison && activeTab === 'overview') {
+      setActiveTab('comparison')
+    }
+  }, [isComparison, activeTab])
+
+
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
@@ -165,7 +174,6 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
   const experiments = data.improvements?.experiments || []
   const grant = data.grant_outline || {}
 
-  const isComparison = !!data.comparison
   const tabs = isComparison
     ? [
         { id: 'comparison', label: 'Comparison Matrix' },
@@ -180,11 +188,6 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
         { id: 'economics', label: 'Economics' },
       ]
 
-  useEffect(() => {
-    if (isComparison && activeTab === 'overview') {
-      setActiveTab('comparison')
-    }
-  }, [isComparison, activeTab])
 
   const getReportMarkdown = () => {
     const title = data.metadata?.title || 'Untitled Document'
