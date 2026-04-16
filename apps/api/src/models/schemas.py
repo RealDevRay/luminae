@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Literal
 from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 
 class AnalysisOptions(BaseModel):
@@ -10,10 +11,10 @@ class AnalysisOptions(BaseModel):
 
 
 class AnalysisRequest(BaseModel):
-    file_base64: Optional[str] = None
-    file_url: Optional[str] = None
+    file_base64: str | None = None
+    file_url: str | None = None
     filename: str
-    options: Optional[AnalysisOptions] = None
+    options: AnalysisOptions | None = None
 
 
 class AnalysisJob(BaseModel):
@@ -27,13 +28,13 @@ class AnalysisJob(BaseModel):
         "complete",
         "error",
     ] = "uploaded"
-    estimated_cost_usd: Optional[float] = None
-    estimated_time_seconds: Optional[int] = None
-    check_status_url: Optional[str] = None
-    paper: Optional[dict] = None
-    analysis: Optional[dict] = None
-    error_message: Optional[str] = None
-    economics: Optional[dict] = None
+    estimated_cost_usd: float | None = None
+    estimated_time_seconds: int | None = None
+    check_status_url: str | None = None
+    paper: dict | None = None
+    analysis: dict | None = None
+    error_message: str | None = None
+    economics: dict | None = None
 
 
 class CompareRequest(BaseModel):
@@ -48,7 +49,7 @@ class BudgetInfo(BaseModel):
 
 
 class UsageLogCreate(BaseModel):
-    paper_id: Optional[str] = None
+    paper_id: str | None = None
     endpoint: str
     model: str
     input_tokens: int
