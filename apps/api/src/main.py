@@ -1,8 +1,13 @@
+import logging
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import os
-import logging
+
+from .config import get_settings
+from .middleware.rate_limit import rate_limit_middleware
+from .routers import analysis, chat, health
 
 logger = logging.getLogger("luminae")
 
@@ -11,10 +16,6 @@ logger = logging.getLogger("luminae")
 _api_key = os.getenv("LUMINAE_MISTRAL_API_KEY", "")
 if _api_key:
     os.environ["MISTRAL_API_KEY"] = _api_key
-
-from .routers import analysis, health, chat
-from .middleware.rate_limit import rate_limit_middleware
-from .config import get_settings
 
 settings = get_settings()
 
@@ -85,5 +86,3 @@ async def root():
         "version": "1.0.0",
         "description": "Autonomous Research Illumination System",
     }
-
-

@@ -1,7 +1,8 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from functools import lru_cache
 import os
+from functools import lru_cache
+
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
 load_dotenv(env_path)
@@ -32,6 +33,6 @@ class Settings(BaseSettings):
     demo_mode: bool = False
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     return Settings()

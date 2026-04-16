@@ -1,7 +1,8 @@
 import time
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from typing import Optional
+
 
 class RateLimiter:
     def __init__(self):
@@ -21,9 +22,7 @@ class RateLimiter:
             self._requests[client_ip] = []
 
         self._requests[client_ip] = [
-            req_time
-            for req_time in self._requests[client_ip]
-            if current_time - req_time < window
+            req_time for req_time in self._requests[client_ip] if current_time - req_time < window
         ]
 
         if len(self._requests[client_ip]) >= max_reqs:
@@ -40,9 +39,7 @@ class RateLimiter:
             return max_reqs
 
         recent_requests = [
-            req_time
-            for req_time in self._requests[client_ip]
-            if current_time - req_time < window
+            req_time for req_time in self._requests[client_ip] if current_time - req_time < window
         ]
 
         return max(0, max_reqs - len(recent_requests))
@@ -72,7 +69,14 @@ async def rate_limit_middleware(request: Request, call_next):
         # Return JSONResponse directly — do NOT raise HTTPException in middleware
         return JSONResponse(
             status_code=429,
-            content={"detail": "Rate limit exceeded. " + ("Max 60 requests per minute." if is_authenticated else "Guests are limited to 5 requests per hour. Please log in.")},
+            content={
+                "detail": "Rate limit exceeded. "
+                + (
+                    "Max 60 requests per minute."
+                    if is_authenticated
+                    else "Guests are limited to 5 requests per hour. Please log in."
+                )
+            },
         )
 
     response = await call_next(request)

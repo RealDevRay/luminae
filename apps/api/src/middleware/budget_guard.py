@@ -1,7 +1,8 @@
-import redis.asyncio as redis
 import asyncio
-from typing import Optional
 import contextvars
+
+import redis.asyncio as redis
+
 from ..config import get_settings
 
 settings = get_settings()
@@ -19,12 +20,13 @@ DEMO_MODE_BUDGET_THRESHOLD = 2.00
 
 
 # Context variables to track tokens and cost per-request
-current_job_tokens = contextvars.ContextVar('current_job_tokens', default=0)
-current_job_cost = contextvars.ContextVar('current_job_cost', default=0.0)
+current_job_tokens = contextvars.ContextVar("current_job_tokens", default=0)
+current_job_cost = contextvars.ContextVar("current_job_cost", default=0.0)
+
 
 class BudgetProtection:
     def __init__(self):
-        self._redis: Optional[redis.Redis] = None
+        self._redis: redis.Redis | None = None
 
     async def get_redis(self) -> redis.Redis:
         if self._redis is None:
@@ -50,9 +52,7 @@ class BudgetProtection:
                 return None
         return self._redis
 
-    def estimate_cost(
-        self, model: str, input_text: str, max_tokens: int
-    ) -> float:
+    def estimate_cost(self, model: str, input_text: str, max_tokens: int) -> float:
         input_tokens = len(input_text) // 4
         pricing = MODEL_PRICING.get(model, {"input": 0.001, "output": 0.001})
 
@@ -81,9 +81,7 @@ class BudgetProtection:
                 redis_client.get("global:remaining_budget"), timeout=3
             )
             if remaining is None:
-                await redis_client.set(
-                    "global:remaining_budget", str(settings.mistral_budget_usd)
-                )
+                await redis_client.set("global:remaining_budget", str(settings.mistral_budget_usd))
                 return settings.mistral_budget_usd
             return float(remaining)
         except Exception:
@@ -121,30 +119,40 @@ class BudgetProtection:
             if redis_client is None:
                 return
             log_key = f"usage:{paper_id}:{endpoint}:{model}"
-            await redis_client.hset(log_key, mapping={
-                "paper_id": paper_id,
-                "endpoint": endpoint,
-                "model": model,
-                "input_tokens": str(input_tokens),
-                "output_tokens": str(output_tokens),
-                "estimated_cost": str(estimated_cost),
-                "actual_cost": str(actual_cost),
-            })
+            await redis_client.hset(
+                log_key,
+                mapping={
+                    "paper_id": paper_id,
+                    "endpoint": endpoint,
+                    "model": model,
+                    "input_tokens": str(input_tokens),
+                    "output_tokens": str(output_tokens),
+                    "estimated_cost": str(estimated_cost),
+                    "actual_cost": str(actual_cost),
+                },
+            )
             await redis_client.expire(log_key, 86400 * 7)
 
             from ..utils.supabase_client import supabase
+
             if supabase:
                 try:
                     await asyncio.to_thread(
-                        lambda: supabase.table("usage_logs").insert({
-                            "paper_id": paper_id,
-                            "endpoint": endpoint,
-                            "model": model,
-                            "input_tokens": input_tokens,
-                            "output_tokens": output_tokens,
-                            "estimated_cost": estimated_cost,
-                            "actual_cost": actual_cost
-                        }).execute()
+                        lambda: (
+                            supabase.table("usage_logs")
+                            .insert(
+                                {
+                                    "paper_id": paper_id,
+                                    "endpoint": endpoint,
+                                    "model": model,
+                                    "input_tokens": input_tokens,
+                                    "output_tokens": output_tokens,
+                                    "estimated_cost": estimated_cost,
+                                    "actual_cost": actual_cost,
+                                }
+                            )
+                            .execute()
+                        )
                     )
                 except Exception as e:
                     print("Failed saving usage log to supabase", e)
