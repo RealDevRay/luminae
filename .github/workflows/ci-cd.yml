@@ -30,9 +30,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
-      - name: Cache uv
-        uses: astral-sh/uv-cache-action@v1
-
       - name: Install dependencies
         run: |
           uv pip install --system -r apps/api/requirements.txt
