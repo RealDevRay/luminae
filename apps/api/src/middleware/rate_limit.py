@@ -49,9 +49,15 @@ rate_limiter = RateLimiter()
 
 
 async def rate_limit_middleware(request: Request, call_next):
-    # Exempt health, status polling, and budget from rate limiting
+    # Exempt health and polling/status endpoints from rate limiting
     path = request.url.path
-    if path == "/health" or "/status/" in path or path.endswith("/budget"):
+    if (
+        path == "/health"
+        or "/status/" in path
+        or "/stream/" in path
+        or "/results/" in path
+        or path.endswith("/budget")
+    ):
         return await call_next(request)
 
     # Determine if user is authenticated
