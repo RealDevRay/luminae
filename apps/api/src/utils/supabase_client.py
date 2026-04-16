@@ -1,9 +1,11 @@
+import logging
 import os
 
 from supabase import Client, create_client
 
 from ..config import get_settings
 
+logger = logging.getLogger("luminae")
 settings = get_settings()
 
 
@@ -20,8 +22,13 @@ def get_supabase_client() -> Client:
         or settings.supabase_anon_key
     )
     if not url or not key:
+        logger.warning("Supabase URL or key not configured  --  Supabase features disabled")
         return None  # Return None if not configured, handle gracefully
-    return create_client(url, key)
+    try:
+        return create_client(url, key)
+    except Exception as e:
+        logger.error(f"Supabase client initialization failed: {e}")
+        return None
 
 
 class LazySupabase:
@@ -33,6 +40,9 @@ class LazySupabase:
         if self._client is None:
             self._client = get_supabase_client()
         return self._client
+
+    def __bool__(self) -> bool:
+        return self.client is not None
 
     def __getattr__(self, name):
         if self.client is None:

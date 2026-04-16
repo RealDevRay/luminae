@@ -4,7 +4,7 @@ import logging
 
 from ..middleware.budget_guard import budget_protection
 
-logger = logging.getLogger("luminae.job_store")
+logger = logging.getLogger("luminae")
 
 
 class JobStore:
@@ -26,6 +26,8 @@ class JobStore:
                     redis_client.set(key, json.dumps(job_data), ex=self.TTL_SECONDS),
                     timeout=3,
                 )
+            else:
+                logger.error(f"Redis unavailable — cannot save job {job_id}")
         except Exception as e:
             logger.warning(f"Redis save failed for {job_id}: {e}")
 
@@ -38,6 +40,8 @@ class JobStore:
                 data = await asyncio.wait_for(redis_client.get(key), timeout=3)
                 if data:
                     return json.loads(data)
+            else:
+                logger.warning(f"Redis unavailable — cannot get job {job_id}")
         except Exception as e:
             logger.warning(f"Redis get failed for {job_id}: {e}")
         return None
@@ -52,6 +56,8 @@ class JobStore:
                     redis_client.set(key, json.dumps(result), ex=self.TTL_SECONDS),
                     timeout=3,
                 )
+            else:
+                logger.error(f"Redis unavailable — cannot save result for {job_id}")
         except Exception as e:
             logger.warning(f"Redis result save failed for {job_id}: {e}")
 
@@ -64,6 +70,8 @@ class JobStore:
                 data = await asyncio.wait_for(redis_client.get(key), timeout=3)
                 if data:
                     return json.loads(data)
+            else:
+                logger.warning(f"Redis unavailable — cannot get result for {job_id}")
         except Exception as e:
             logger.warning(f"Redis result get failed for {job_id}: {e}")
         return None

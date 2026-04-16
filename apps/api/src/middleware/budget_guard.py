@@ -1,10 +1,12 @@
 import asyncio
 import contextvars
+import logging
 
 import redis.asyncio as redis
 
 from ..config import get_settings
 
+logger = logging.getLogger("luminae")
 settings = get_settings()
 
 MODEL_PRICING = {
@@ -32,11 +34,17 @@ class BudgetProtection:
         if self._redis is None:
             try:
                 url = settings.upstash_redis_rest_url
+                if not url:
+                    logger.error(
+                        "UPSTASH_REDIS_REST_URL is not configured — Redis persistence disabled"
+                    )
+                    return None
+
                 token = settings.upstash_redis_rest_token
 
                 # Embed password into URL if not already present
                 if token and "@" not in url:
-                    # Convert redis://host:port → redis://default:PASSWORD@host:port
+                    # Convert redis://host:port -> redis://default:PASSWORD@host:port
                     url = url.replace("redis://", f"redis://default:{token}@", 1)
                     url = url.replace("rediss://", f"rediss://default:{token}@", 1)
 
@@ -48,7 +56,11 @@ class BudgetProtection:
                     socket_timeout=3,
                     ssl=use_ssl,
                 )
-            except Exception:
+                await self._redis.ping()
+                logger.info("Redis connection established")
+            except Exception as e:
+                logger.error(f"Redis connection failed: {e}")
+                self._redis = None
                 return None
         return self._redis
 

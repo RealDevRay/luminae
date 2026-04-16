@@ -69,9 +69,23 @@ async def run_analysis(job_id: str, request: AnalysisRequest, user_id: str):
                         await redis_client.setex(
                             f"job:{job_id}:pdf_payload", 86400 * 7, file_content
                         )
-                except Exception:
+                except Exception as e:
+                    logger.error(f"File decode failed for job {job_id}: {e}")
+                    await job_store.save_job(
+                        job_id,
+                        {
+                            "job_id": job_id,
+                            "status": "error",
+                            "error_message": f"File decode failed: {e}",
+                        },
+                    )
                     return
             else:
+                logger.error(f"No file payload for job {job_id}")
+                await job_store.save_job(
+                    job_id,
+                    {"job_id": job_id, "status": "error", "error_message": "No file data provided"},
+                )
                 return
             file_hash = hashlib.sha256(file_content).hexdigest()
 
@@ -294,10 +308,8 @@ async def analyze_paper(
 
     job_id = str(uuid.uuid4())
 
-    # Completely decouple processing so the API instantly returns
-    background_tasks.add_task(run_analysis, job_id, request, user_id)
-
-    return AnalysisJob(
+    # Save initial job status so polling never hits a 404 gap
+    initial_job = AnalysisJob(
         job_id=job_id,
         status="processing_ocr",
         estimated_cost_usd=estimated_cost,
@@ -305,6 +317,11 @@ async def analyze_paper(
         check_status_url=f"/api/v1/status/{job_id}",
         paper={"id": job_id, "filename": request.filename},
     )
+    await job_store.save_job(job_id, initial_job.model_dump())
+
+    background_tasks.add_task(run_analysis, job_id, request, user_id)
+
+    return initial_job
 
 
 @router.get("/status/{job_id}", response_model=AnalysisJob)
@@ -338,6 +355,23 @@ async def get_status(job_id: str, user_id: str = Depends(get_current_user_id)):
 
 @router.get("/results/{job_id}", response_model=AnalysisJob)
 async def get_results(job_id: str, user_id: str = Depends(get_current_user_id)):
+    # Try Redis first (consistent with get_status)
+    job_data = await job_store.get_job(job_id)
+    if job_data:
+        job = AnalysisJob(**job_data)
+        if job.status == "complete":
+            result = await job_store.get_result(job_id) or {}
+            return AnalysisJob(
+                job_id=job_id,
+                status="complete",
+                check_status_url=f"/api/v1/status/{job_id}",
+                analysis=result,
+                economics=result.get("economics"),
+                paper={"id": job_id, "filename": job.paper.get("filename") if job.paper else ""},
+            )
+        return job
+
+    # Fall back to Supabase for historical jobs
     if supabase:
         try:
             paper_res = supabase.table("papers").select("*").eq("id", job_id).execute()
@@ -384,27 +418,9 @@ async def get_results(job_id: str, user_id: str = Depends(get_current_user_id)):
                         paper={"id": job_id, "filename": paper.get("filename")},
                     )
         except Exception as e:
-            logger.warning(f"Failed fetching from supabase, falling back to Redis: {e}")
+            logger.warning(f"Failed fetching from supabase, falling back: {e}")
 
-    # Fall back to Redis
-    job_data = await job_store.get_job(job_id)
-    if not job_data:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    job = AnalysisJob(**job_data)
-    if job.status != "complete":
-        return job
-
-    result = await job_store.get_result(job_id) or {}
-
-    return AnalysisJob(
-        job_id=job_id,
-        status="complete",
-        check_status_url=f"/api/v1/status/{job_id}",
-        analysis=result,
-        economics=result.get("economics"),
-        paper={"id": job_id, "filename": job.paper.get("filename") if job.paper else ""},
-    )
+    raise HTTPException(status_code=404, detail="Job not found")
 
 
 @router.get("/stream/{job_id}")
