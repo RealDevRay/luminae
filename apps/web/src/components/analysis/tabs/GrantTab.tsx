@@ -50,22 +50,22 @@ export function GrantTab({ grant }: { grant: any }) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+          <div className="space-y-4 pt-4 border-t">
             {grant.timeline && (
-              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                <span className="text-xs uppercase font-bold text-primary tracking-wider block mb-1">Timeline</span>
-                <p className="font-medium text-foreground text-lg">
-                  {grant.timeline}
-                </p>
+              <div className="p-5 bg-primary/5 rounded-lg border border-primary/20">
+                <h5 className="font-semibold text-foreground mb-2 text-lg">Timeline</h5>
+                <div className="text-muted-foreground leading-relaxed">
+                  <FormattedText text={grant.timeline} as="div" />
+                </div>
               </div>
             )}
 
             {grant.budget_estimate && (
               <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900/50">
                 <span className="text-xs uppercase font-bold text-green-700 dark:text-green-400 tracking-wider block mb-1">Budget</span>
-                <p className="font-medium text-green-900 dark:text-green-100 text-lg">
-                  {grant.budget_estimate}
-                </p>
+                <div className="font-medium text-green-900 dark:text-green-100 text-lg">
+                  <FormattedText text={grant.budget_estimate} as="div" />
+                </div>
               </div>
             )}
           </div>

@@ -49,23 +49,52 @@ export function FormattedList({
 }
 
 // ---------------------------------------------------------------------------
-// Inline markdown parser – converts **bold**, *italic*, and \n to React nodes
+// Inline markdown parser – converts **bold**, *italic*, bullet points, and \n to React nodes
 // ---------------------------------------------------------------------------
 
 function parseMarkdownInline(text: string): React.ReactNode[] {
-  // Split on newlines first, join with <br/>
   const lines = text.split(/\n/)
   const nodes: React.ReactNode[] = []
+  let bulletBuffer: React.ReactNode[] = []
+  let keyCounter = 0
+
+  const flushBullets = () => {
+    if (bulletBuffer.length > 0) {
+      nodes.push(
+        React.createElement('ul', { key: `ul-${keyCounter++}`, className: 'list-disc list-inside space-y-1 my-2' },
+          ...bulletBuffer
+        )
+      )
+      bulletBuffer = []
+    }
+  }
 
   lines.forEach((line, lineIdx) => {
-    if (lineIdx > 0) {
-      nodes.push(<br key={`br-${lineIdx}`} />)
+    const trimmed = line.trim()
+    const bulletMatch = trimmed.match(/^[-•*]\s+(.+)/)
+
+    if (bulletMatch) {
+      const content = parseInlineFormatting(bulletMatch[1], lineIdx)
+      bulletBuffer.push(
+        React.createElement('li', { key: `li-${keyCounter++}` }, ...content)
+      )
+    } else {
+      flushBullets()
+      if (trimmed === '') {
+        if (nodes.length > 0) {
+          nodes.push(React.createElement('br', { key: `br-${keyCounter++}` }))
+        }
+      } else {
+        if (nodes.length > 0 && bulletBuffer.length === 0) {
+          nodes.push(React.createElement('br', { key: `br-${keyCounter++}` }))
+        }
+        const lineNodes = parseInlineFormatting(trimmed, lineIdx)
+        nodes.push(...lineNodes)
+      }
     }
-    // Parse inline formatting within each line
-    const lineNodes = parseInlineFormatting(line, lineIdx)
-    nodes.push(...lineNodes)
   })
 
+  flushBullets()
   return nodes
 }
 
