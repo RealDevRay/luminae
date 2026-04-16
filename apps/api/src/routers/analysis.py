@@ -410,14 +410,34 @@ async def stream_status(job_id: str, request: Request):
 
     async def event_generator():
         last_status = None
+        max_stream_seconds = 180
+        poll_interval_seconds = 2.0
+        heartbeat_interval_seconds = 10.0
+        started_at = asyncio.get_event_loop().time()
+        next_heartbeat_at = started_at + heartbeat_interval_seconds
+
         while True:
             if await request.is_disconnected():
+                logger.info(f"SSE client disconnected for job {job_id}")
                 break
 
-            job_data = await job_store.get_job(job_id)
+            now = asyncio.get_event_loop().time()
+            if now - started_at >= max_stream_seconds:
+                # Explicit timeout event prevents clients from hanging indefinitely.
+                yield "event: timeout\n"
+                yield f"data: {json.dumps({'status': 'timeout', 'job_id': job_id, 'message': 'Stream timed out; reconnect to continue.'})}\n\n"
+                break
+
+            try:
+                job_data = await job_store.get_job(job_id)
+            except Exception as e:
+                logger.warning(f"SSE job lookup failed for {job_id}: {e}")
+                yield "event: error\n"
+                yield f"data: {json.dumps({'status': 'error', 'job_id': job_id, 'error_message': 'Failed to read job status'})}\n\n"
+                break
+
             if not job_data:
-                # If job not found in redis, it might be in supabase (or doesn't exist)
-                # Just send a heartbeat and check supabase once.
+                # If job not found in redis, it might be in supabase (or doesn't exist).
                 if supabase:
                     try:
                         res = supabase.table("papers").select("status").eq("id", job_id).execute()
@@ -425,29 +445,60 @@ async def stream_status(job_id: str, request: Request):
                             status = res.data[0]["status"]
                             if status != last_status:
                                 last_status = status
-                                yield f"data: {json.dumps({'status': status})}\n\n"
+                                payload = {"status": status, "job_id": job_id}
+                                yield f"data: {json.dumps(payload)}\n\n"
+
                             if status in ("complete", "error"):
+                                # Send explicit terminal event then close.
+                                event_name = "complete" if status == "complete" else "error"
+                                yield f"event: {event_name}\n"
+                                yield f"data: {json.dumps({'status': status, 'job_id': job_id})}\n\n"
                                 break
-                    except Exception:
-                        pass
+                        else:
+                            # Deterministic not-found signal for frontend fallback logic.
+                            yield "event: error\n"
+                            yield f"data: {json.dumps({'status': 'error', 'job_id': job_id, 'error': 'Job not found'})}\n\n"
+                            break
+                    except Exception as e:
+                        logger.warning(f"SSE supabase lookup failed for {job_id}: {e}")
+                        yield "event: error\n"
+                        yield f"data: {json.dumps({'status': 'error', 'job_id': job_id, 'error_message': 'Status lookup failed'})}\n\n"
+                        break
                 else:
-                    yield f"data: {json.dumps({'error': 'Job not found'})}\n\n"
+                    yield "event: error\n"
+                    yield f"data: {json.dumps({'status': 'error', 'job_id': job_id, 'error': 'Job not found'})}\n\n"
                     break
             else:
                 status = job_data.get("status")
-                # Send update if status changed, or just heartbeat every 3s
+                # Send update if status changed.
                 if status != last_status:
                     last_status = status
                     yield f"data: {json.dumps(job_data)}\n\n"
 
                 if status in ("complete", "error"):
+                    # Send explicit terminal event and terminal payload.
+                    event_name = "complete" if status == "complete" else "error"
+                    yield f"event: {event_name}\n"
+                    yield f"data: {json.dumps(job_data)}\n\n"
                     break
 
-            await asyncio.sleep(2.0)
-            # Heartbeat to keep connection alive
-            yield ": heartbeat\n\n"
+            # Heartbeat to keep proxy/load balancer connections alive.
+            now = asyncio.get_event_loop().time()
+            if now >= next_heartbeat_at:
+                yield ": heartbeat\n\n"
+                next_heartbeat_at = now + heartbeat_interval_seconds
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+            await asyncio.sleep(poll_interval_seconds)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/reanalyze", response_model=AnalysisJob)

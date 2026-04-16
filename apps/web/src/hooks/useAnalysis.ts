@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { apiClient, AnalysisJob } from '@/lib/api-client'
 import { useAnalysisStore } from '@/stores/analysisStore'
 
@@ -106,22 +106,85 @@ export function useAnalysis(jobId: string) {
   const [analysis, setAnalysis] = useState<AnalysisJob | null>(null)
   const { saveAnalysis } = useAnalysisStore()
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  const reconnectAttemptsRef = useRef(0)
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const maxReconnectAttempts = 6
+  const streamTimeoutMs = 45000
+
+  const clearTimers = useCallback(() => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current)
+      reconnectTimerRef.current = null
+    }
+    if (streamTimeoutRef.current) {
+      clearTimeout(streamTimeoutRef.current)
+      streamTimeoutRef.current = null
+    }
+  }, [])
 
   const connectSSE = useCallback(() => {
     if (!jobId) return
 
+    clearTimers()
     setIsLoading(true)
     setError(null)
 
+    const scheduleReconnect = () => {
+      if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+        apiClient.getResults(jobId).then(res => {
+          setAnalysis(res)
+          setIsLoading(false)
+          if (res.status === 'complete' && res.analysis) {
+            saveAnalysis(jobId, res.analysis)
+          } else if (res.status !== 'complete') {
+            setError('Live updates disconnected. Click Retry to continue polling status.')
+          }
+        }).catch(() => {
+          setError('Connection lost. The server may be restarting — click Retry.')
+          setIsLoading(false)
+        })
+        return
+      }
+
+      const nextAttempt = reconnectAttemptsRef.current + 1
+      reconnectAttemptsRef.current = nextAttempt
+      const delay = Math.min(1000 * (2 ** (nextAttempt - 1)), 10000)
+
+      reconnectTimerRef.current = setTimeout(() => {
+        connectSSE()
+      }, delay)
+    }
+
     const eventSource = new EventSource(`${API_URL}/api/v1/stream/${jobId}`)
+
+    streamTimeoutRef.current = setTimeout(() => {
+      eventSource.close()
+      apiClient.getResults(jobId).then(res => {
+        setAnalysis(res)
+        setIsLoading(false)
+        if (res.status === 'complete' && res.analysis) {
+          saveAnalysis(jobId, res.analysis)
+        } else {
+          scheduleReconnect()
+        }
+      }).catch(() => {
+        scheduleReconnect()
+      })
+    }, streamTimeoutMs)
+
+    eventSource.onopen = () => {
+      reconnectAttemptsRef.current = 0
+    }
 
     eventSource.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data)
-        
+
         if (data.error) {
           setError(data.error)
           setIsLoading(false)
+          clearTimers()
           eventSource.close()
           return
         }
@@ -131,24 +194,29 @@ export function useAnalysis(jobId: string) {
 
         if (data.status === 'complete') {
           try {
-             // Fetch full populated results from the normal endpoint since SSE might only have metadata
-             const fullResponse = await apiClient.getResults(jobId)
-             setAnalysis(fullResponse)
-             if (fullResponse.analysis) {
-               saveAnalysis(jobId, fullResponse.analysis)
-             }
+            // Fetch full populated results from the normal endpoint since SSE might only have metadata
+            const fullResponse = await apiClient.getResults(jobId)
+            setAnalysis(fullResponse)
+            if (fullResponse.analysis) {
+              saveAnalysis(jobId, fullResponse.analysis)
+            }
           } catch (e) {
-             console.error("Failed to fetch full results after stream completion", e)
-             if (data.analysis) {
-               saveAnalysis(jobId, data.analysis)
-             }
+            console.error('Failed to fetch full results after stream completion', e)
+            if (data.analysis) {
+              saveAnalysis(jobId, data.analysis)
+            }
           }
+          clearTimers()
           eventSource.close()
         }
 
-        if (data.status === 'error') {
-          setError(data.error_message || 'Analysis failed')
+        if (data.status === 'error' || data.status === 'timeout') {
+          setError(data.error_message || (data.status === 'timeout' ? 'Live stream timed out. Reconnecting…' : 'Analysis failed'))
+          clearTimers()
           eventSource.close()
+          if (data.status === 'timeout') {
+            scheduleReconnect()
+          }
         }
       } catch (err) {
         console.error('Failed to parse SSE message', err)
@@ -156,25 +224,27 @@ export function useAnalysis(jobId: string) {
     }
 
     eventSource.onerror = () => {
-      // Reconnect handled automatically by EventSource, but update UI
+      clearTimers()
       eventSource.close()
-      // Fallback to fetch Results directly if SSE drops
+
       apiClient.getResults(jobId).then(res => {
         setAnalysis(res)
-        setIsLoading(false)
         if (res.status === 'complete' && res.analysis) {
-           saveAnalysis(jobId, res.analysis)
+          saveAnalysis(jobId, res.analysis)
+          setIsLoading(false)
+          return
         }
-      }).catch(err => {
-        setError('Connection lost. The server may be restarting — click Retry.')
-        setIsLoading(false)
+        scheduleReconnect()
+      }).catch(() => {
+        scheduleReconnect()
       })
     }
 
     return () => {
+      clearTimers()
       eventSource.close()
     }
-  }, [jobId, saveAnalysis, API_URL])
+  }, [jobId, saveAnalysis, API_URL, clearTimers])
 
   const fetchAnalysis = useCallback(async () => {
      // fallback for manual retry
@@ -192,10 +262,12 @@ export function useAnalysis(jobId: string) {
   }, [jobId, saveAnalysis])
 
   const retry = useCallback(() => {
+    reconnectAttemptsRef.current = 0
+    clearTimers()
     setError(null)
     setIsLoading(true)
     connectSSE()
-  }, [connectSSE])
+  }, [connectSSE, clearTimers])
 
   return { analysis, isLoading, error, connectSSE, fetchAnalysis, retry }
 }
