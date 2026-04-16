@@ -351,10 +351,9 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
 
   const pdfUrl = data.metadata?.source_type === 'url' && data.metadata?.source_url 
     ? data.metadata.source_url 
-    : `${API_URL}/api/v1/pdf/${jobId}`
+    : null
 
-  const hasPdf = !isComparison && (data.metadata?.source_type === 'file_upload' || data.metadata?.source_url)
-
+  const hasPdf = !isComparison && !!pdfUrl
   return (
     <div className={`space-y-6 ${hasPdf ? 'xl:grid xl:grid-cols-2 xl:gap-6 xl:space-y-0 xl:h-[calc(100vh-120px)]' : ''}`}>
       

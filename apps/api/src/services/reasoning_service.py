@@ -58,7 +58,7 @@ CRITICAL OUTPUT RULES:
 - Do NOT use markdown formatting (**, *, _, __, etc.) inside any JSON string values. Use plain text only.
 
 Output this exact JSON schema:
-{"title": "plain text grant title", "specific_aims": ["plain text aim 1", "plain text aim 2", "plain text aim 3"], "research_strategy": "plain text research strategy paragraph", "expected_outcomes": "plain text expected outcomes paragraph", "timeline": "plain text timeline (e.g. 3 years)", "budget_estimate": "plain text budget estimate"}""",
+{"title": "plain text grant title", "specific_aims": ["plain text aim 1", "plain text aim 2", "plain text aim 3"], "research_strategy": "plain text research strategy paragraph", "expected_outcomes": "plain text expected outcomes paragraph", "timeline": "plain text timeline appropriate to the scope of the proposed research", "budget_estimate": "plain text budget estimate"}""",
     "reference_extractor": """You are an expert academic librarian. Your task is to extract up to 15 of the most important references/citations from the provided text.
 Look for a 'References' or 'Bibliography' section, or inline citations if a formal section is missing.
 
