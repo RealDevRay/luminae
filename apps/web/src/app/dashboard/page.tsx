@@ -144,6 +144,11 @@ export default function DashboardPage() {
           <p className="text-xs text-center text-muted-foreground">
             Built by <strong>Aletheia Labs</strong> for the <strong>Mistral Worldwide Hackathon 2026</strong> • Powered by Mistral AI
           </p>
+          <div className="flex justify-center items-center space-x-4 mt-2 text-xs text-muted-foreground">
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <span>•</span>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
+          </div>
         </div>
       </footer>
     </div>
