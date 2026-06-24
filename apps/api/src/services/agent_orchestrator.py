@@ -2,7 +2,7 @@ import asyncio
 import time
 import uuid
 
-from ..middleware.budget_guard import budget_protection, current_job_cost, current_job_tokens
+from ..middleware.budget_guard import budget_protection, current_job_stats, JobStats
 from .ocr_service import get_document_type, ocr_service
 from .reasoning_service import reasoning_service
 from .vision_service import vision_service
@@ -76,8 +76,8 @@ class AgentOrchestrator:
         paper_id = str(uuid.uuid4())
 
         # Reset contextvars for this job (just in case they weren't reset per-request)
-        current_job_tokens.set(0)
-        current_job_cost.set(0.0)
+        stats = JobStats()
+        current_job_stats.set(stats)
 
         # We need to add OCR cost back if we didn't cache hit, but wait, OCR is already done before _run_pipeline!
         # So OCR cost might not be in the context var cleanly if context is lost.
@@ -142,8 +142,9 @@ class AgentOrchestrator:
         processing_time = time.time() - start_time
 
         _ = sum(COST_ESTIMATES.values())  # legacy baseline (unused)
-        actual_cost = current_job_cost.get()
-        actual_tokens = current_job_tokens.get()
+        stats = current_job_stats.get()
+        actual_cost = stats.cost if stats else 0.0
+        actual_tokens = stats.tokens if stats else 0
 
         # Deduct from global budget in Redis (use actual)
         await budget_protection.deduct_budget(actual_cost)

@@ -101,7 +101,7 @@ class ReasoningService:
         return self._parse_json(response, agent_name="methodology_critic")
 
     async def audit_dataset(self, paper_text):
-        prompt = f"Analyze the dataset description in this paper:\n\n{paper_text[:8000]}"
+        prompt = f"Analyze the dataset description in this paper:\n\n{paper_text[:25000]}"
         response = await self._call_agent(
             "dataset_auditor",
             [{"role": "user", "content": prompt}],
@@ -109,7 +109,7 @@ class ReasoningService:
         return self._parse_json(response, agent_name="dataset_auditor")
 
     async def design_experiments(self, paper_text, methodology_critique, dataset_audit):
-        context = f"""Paper text:\n{paper_text[:5000]}\n\n
+        context = f"""Paper text:\n{paper_text[:25000]}\n\n
 Methodology critique:\n{json.dumps(methodology_critique)}\n\n
 Dataset audit:\n{json.dumps(dataset_audit)}"""
 
@@ -143,7 +143,7 @@ Proposed experiments: {json.dumps(experiments)}"""
     async def extract_references(self, paper_text):
         # We only need the end of the paper usually, but for short ones give whole.
         # References are usually at the end.
-        text_chunk = paper_text[-15000:] if len(paper_text) > 15000 else paper_text
+        text_chunk = paper_text[-25000:] if len(paper_text) > 25000 else paper_text
         prompt = f"Extract the references from this document:\n\n{text_chunk}"
         response = await self._call_agent(
             "reference_extractor",
@@ -186,7 +186,7 @@ Proposed experiments: {json.dumps(experiments)}"""
             )
             figures_context = f"\n\nFigure analyses:\n{figures_summary}"
 
-        return f"Analyze this paper's methodology:\n\n{paper_text[:10000]}{figures_context}"
+        return f"Analyze this paper's methodology:\n\n{paper_text[:35000]}{figures_context}"
 
     def _parse_json(self, content: str, agent_name: str = "unknown") -> dict:
         """Parse JSON from agent response with fallback recovery and logging."""

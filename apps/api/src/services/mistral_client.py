@@ -4,7 +4,7 @@ import os
 from mistralai import Mistral
 
 from ..config import get_settings
-from ..middleware.budget_guard import budget_protection, current_job_cost, current_job_tokens
+from ..middleware.budget_guard import budget_protection, current_job_stats
 from ..utils.retry import retry_with_backoff
 
 logger = logging.getLogger("luminae.mistral_client")
@@ -46,8 +46,10 @@ class MistralClient:
                 total_tokens = prompt_tokens + comp_tokens
                 cost = budget_protection.calculate_actual_cost(model, prompt_tokens, comp_tokens)
 
-                current_job_tokens.set(current_job_tokens.get() + total_tokens)
-                current_job_cost.set(current_job_cost.get() + cost)
+                stats = current_job_stats.get()
+                if stats is not None:
+                    stats.tokens += total_tokens
+                    stats.cost += cost
 
             return response.model_dump()
 
@@ -80,8 +82,10 @@ class MistralClient:
                 cost = budget_protection.calculate_actual_cost(
                     "mistral-ocr-latest", prompt_tokens, comp_tokens
                 )
-                current_job_tokens.set(current_job_tokens.get() + total_tokens)
-                current_job_cost.set(current_job_cost.get() + cost)
+                stats = current_job_stats.get()
+                if stats is not None:
+                    stats.tokens += total_tokens
+                    stats.cost += cost
 
             return response.model_dump()
 
@@ -121,8 +125,10 @@ class MistralClient:
                 total_tokens = prompt_tokens + comp_tokens
                 cost = budget_protection.calculate_actual_cost(model, prompt_tokens, comp_tokens)
 
-                current_job_tokens.set(current_job_tokens.get() + total_tokens)
-                current_job_cost.set(current_job_cost.get() + cost)
+                stats = current_job_stats.get()
+                if stats is not None:
+                    stats.tokens += total_tokens
+                    stats.cost += cost
 
             return response.model_dump()
 

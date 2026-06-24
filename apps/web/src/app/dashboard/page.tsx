@@ -8,11 +8,12 @@ import { AnalysisList } from '@/components/analysis/AnalysisList'
 import dynamic from 'next/dynamic'
 const AnalysisDashboard = dynamic(() => import('@/components/analysis/AnalysisDashboard').then(mod => mod.AnalysisDashboard), { ssr: false })
 import { Chatbot } from '@/components/chatbot/Chatbot'
-import { Brain, ArrowLeft, History, Loader2, User, AlertTriangle, LogOut } from 'lucide-react'
+import { Brain, ArrowLeft, History, Loader2, User, AlertTriangle, LogOut, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function DashboardPage() {
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const [showSidebar, setShowSidebar] = useState(true)
   const { user, loading, signOut } = useAuth()
   const isGuestMode = !loading && !user
 
@@ -110,34 +111,51 @@ export default function DashboardPage() {
         ) : (
           <div className="flex flex-col xl:flex-row gap-8 animate-in fade-in duration-500">
             {/* Left/Main Column - Analysis Results (Wider) */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 space-y-4">
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={() => setShowSidebar(p => !p)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium border rounded-lg bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showSidebar ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+                  {showSidebar ? 'Hide Sidebar' : 'Show Sidebar'}
+                </button>
+                <button
+                  onClick={() => setCurrentJobId(null)}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                  Back to Upload
+                </button>
+              </div>
               <div className="bg-background border border-border rounded-2xl p-6 shadow-sm">
                 <AnalysisDashboard jobId={currentJobId} />
               </div>
             </div>
 
             {/* Right Sidebar - Upload New & History (Sticky) */}
-            <div className="xl:w-[400px] flex-shrink-0 space-y-6">
-              <div className="bg-background border border-border rounded-2xl p-6 shadow-sm sticky top-24">
-                <h2 className="text-lg font-semibold mb-4 text-foreground">
-                  Analyze Another Document
-                </h2>
-                <div className="scale-95 origin-top">
-                  <UploadZone onAnalysisComplete={setCurrentJobId} isGuestMode={isGuestMode} />
-                </div>
-                
-                {!isGuestMode && (
-                  <div className="mt-6 pt-6 border-t border-border">
-                    <AnalysisList isGuestMode={isGuestMode} />
+            {showSidebar && (
+              <div className="xl:w-[400px] flex-shrink-0 space-y-6">
+                <div className="bg-background border border-border rounded-2xl p-6 shadow-sm sticky top-24">
+                  <h2 className="text-lg font-semibold mb-4 text-foreground">
+                    Analyze Another Document
+                  </h2>
+                  <div className="scale-95 origin-top">
+                    <UploadZone onAnalysisComplete={setCurrentJobId} isGuestMode={isGuestMode} />
                   </div>
-                )}
+                  
+                  {!isGuestMode && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <AnalysisList isGuestMode={isGuestMode} />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </main>
 
-      <Chatbot />
+      <Chatbot paperId={currentJobId || undefined} />
 
       <footer className="border-t mt-8 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

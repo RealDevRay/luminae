@@ -21,9 +21,15 @@ CIRCUIT_BREAKER_THRESHOLD = settings.circuit_breaker_threshold
 DEMO_MODE_BUDGET_THRESHOLD = 2.00
 
 
+class JobStats:
+    def __init__(self):
+        self.tokens = 0
+        self.cost = 0.0
+
+
 # Context variables to track tokens and cost per-request
-current_job_tokens = contextvars.ContextVar("current_job_tokens", default=0)
-current_job_cost = contextvars.ContextVar("current_job_cost", default=0.0)
+current_job_stats = contextvars.ContextVar("current_job_stats", default=None)
+
 
 
 class BudgetProtection:

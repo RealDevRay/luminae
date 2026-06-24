@@ -48,27 +48,27 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
           <div className="border-b px-6 py-4">
             <div className="flex space-x-6">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-4 w-24 bg-gray-200 rounded"></div>
+                <div key={i} className="h-4 w-24 bg-muted rounded"></div>
               ))}
             </div>
           </div>
           <div className="p-6 space-y-6">
             <div>
-              <div className="h-8 w-3/4 bg-gray-200 rounded mb-4"></div>
+              <div className="h-8 w-3/4 bg-muted rounded mb-4"></div>
               <div className="flex gap-3">
-                <div className="h-4 w-32 bg-gray-200 rounded"></div>
-                <div className="h-4 w-20 bg-gray-200 rounded-full"></div>
+                <div className="h-4 w-32 bg-muted rounded"></div>
+                <div className="h-4 w-20 bg-muted rounded-full"></div>
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-24 bg-gray-100 rounded-lg p-4">
-                  <div className="h-4 w-1/2 bg-gray-200 rounded mb-4"></div>
-                  <div className="h-6 w-1/3 bg-gray-300 rounded"></div>
+                <div key={i} className="h-24 bg-muted/50 rounded-lg p-4">
+                  <div className="h-4 w-1/2 bg-muted rounded mb-4"></div>
+                  <div className="h-6 w-1/3 bg-muted rounded"></div>
                 </div>
               ))}
             </div>
@@ -109,14 +109,14 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
     const currentStepIdx = steps.findIndex(s => s.id === status)
 
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">Processing your document...</p>
-            <p className="text-sm text-gray-500">This may take 1–3 minutes depending on document size</p>
+            <p className="font-semibold text-foreground">Processing your document...</p>
+            <p className="text-sm text-muted-foreground">This may take 1–3 minutes depending on document size</p>
           </div>
         </div>
 
@@ -130,15 +130,15 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
               <div
                 key={step.id}
                 className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                  isActive ? 'bg-indigo-50 border border-indigo-200' :
-                  isDone ? 'bg-green-50 border border-green-200' :
-                  'bg-gray-50 border border-gray-100'
+                  isActive ? 'bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/50' :
+                  isDone ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50' :
+                  'bg-muted/50 border border-border/50'
                 }`}
               >
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  isActive ? 'bg-indigo-600' :
-                  isDone ? 'bg-green-600' :
-                  'bg-gray-300'
+                  isActive ? 'bg-indigo-600 dark:bg-indigo-500' :
+                  isDone ? 'bg-green-600 dark:bg-green-500' :
+                  'bg-muted'
                 }`}>
                   {isDone ? (
                     <CheckCircle className="w-4 h-4 text-white" />
@@ -151,12 +151,12 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                 <div>
                   <p className={`text-sm font-medium ${
                     isActive ? 'text-primary' :
-                    isDone ? 'text-green-800' :
+                    isDone ? 'text-green-800 dark:text-green-300' :
                     'text-muted-foreground'
                   }`}>{step.label}</p>
                   <p className={`text-xs ${
                     isActive ? 'text-primary/80' :
-                    isDone ? 'text-green-600' :
+                    isDone ? 'text-green-600 dark:text-green-400' :
                     'text-muted-foreground/80'
                   }`}>{step.description}</p>
                 </div>
@@ -349,7 +349,9 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
     }
   }
 
-  const pdfUrl = data.metadata?.source_type === 'url' && data.metadata?.source_url 
+  const pdfUrl = data.metadata?.source_type === 'file_upload'
+    ? `${API_URL}/api/v1/pdf/${jobId}`
+    : data.metadata?.source_type === 'url' && data.metadata?.source_url 
     ? data.metadata.source_url 
     : null
 
@@ -359,7 +361,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
       
       {/* Side-by-Side PDF Viewer Panel */}
       {hasPdf && (
-        <div className="hidden xl:flex flex-col bg-white rounded-xl shadow-sm border overflow-hidden h-full">
+        <div className="hidden xl:flex flex-col bg-card rounded-xl shadow-sm border overflow-hidden h-full">
           <div className="border-b px-4 py-3 bg-muted/50 flex justify-between items-center shrink-0">
             <span className="font-medium text-sm text-foreground flex items-center gap-2">
               <FileText className="w-4 h-4" />
@@ -383,7 +385,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-auto bg-gray-100 flex justify-center py-4 relative">
+          <div className="flex-1 overflow-auto bg-muted flex justify-center py-4 relative">
             <Document
               file={pdfUrl}
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
@@ -406,7 +408,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
                  width={600}
                  renderTextLayer={true}
                  renderAnnotationLayer={true}
-                 className="shadow-lg bg-white"
+                 className="shadow-lg bg-card"
               />
             </Document>
           </div>
@@ -414,7 +416,7 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
       )}
 
       {/* Analysis Panel */}
-      <div className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col ${hasPdf ? 'h-full' : ''}`}>
+      <div className={`bg-card rounded-xl shadow-sm border overflow-hidden flex flex-col ${hasPdf ? 'h-full' : ''}`}>
         <div className="border-b overflow-x-auto scrollbar-hide shrink-0">
           <nav className="flex -mb-px min-w-max">
             {tabs.map((tab) => (
@@ -437,8 +439,8 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
         </div>
 
         {/* Export button bar */}
-        <div className="flex items-center justify-end px-6 pt-4 gap-2 border-b pb-4 bg-gray-50/50">
-          <span className="text-sm text-gray-500 mr-2">Export Report:</span>
+        <div className="flex items-center justify-end px-6 pt-4 gap-2 border-b pb-4 bg-muted/30">
+          <span className="text-sm text-muted-foreground mr-2">Export Report:</span>
           <button
             onClick={exportMarkdown}
             title="Download formatted Markdown"

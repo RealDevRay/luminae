@@ -94,14 +94,14 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
   return (
     <div className="space-y-4">
       {/* Tab switcher */}
-      <div className="flex rounded-lg bg-gray-100 p-1">
+      <div className="flex rounded-lg bg-muted p-1">
         <button
           onClick={() => setActiveTab('upload')}
           className={cn(
             'flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors',
             activeTab === 'upload'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-card text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
           <Upload className="w-4 h-4" />
@@ -112,8 +112,8 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
           className={cn(
             'flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors',
             activeTab === 'url'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-card text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
           <Link className="w-4 h-4" />
@@ -129,7 +129,7 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
             'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors',
             isDragActive
               ? 'border-primary/50 bg-primary/5'
-              : 'border-border hover:border-gray-400',
+              : 'border-border hover:border-foreground/30',
             isProcessing && 'opacity-50 cursor-not-allowed'
           )}
         >
@@ -138,8 +138,8 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
             {isUploading ? (
               <>
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-gray-600">Uploading and processing...</p>
-                <div className="w-full max-w-xs bg-gray-200 rounded-full h-2 mt-4">
+                <p className="text-muted-foreground">Uploading and processing...</p>
+                <div className="w-full max-w-xs bg-muted rounded-full h-2 mt-4">
                   <div
                     className="bg-primary h-2 rounded-full transition-all"
                     style={{ width: `${uploadProgress}%` }}
@@ -151,23 +151,23 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <Upload className="w-8 h-8 text-primary" />
                 </div>
-                <p className="text-lg font-medium text-gray-900">
+                <p className="text-lg font-medium text-foreground">
                   {isDragActive ? 'Drop your document here' : 'Drag & drop your document'}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   or click to browse (max 20MB)
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-                  <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
                     <FileText className="w-3 h-3" /> PDF
                   </span>
-                  <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
                     <FileText className="w-3 h-3" /> DOCX
                   </span>
-                  <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
                     <FileText className="w-3 h-3" /> PPTX
                   </span>
-                  <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
                     <Image className="w-3 h-3" /> PNG / JPG
                   </span>
                 </div>
@@ -180,15 +180,15 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
       {/* URL tab */}
       {activeTab === 'url' && (
         <form onSubmit={handleUrlSubmit} className="space-y-3">
-          <div className="border-2 border-dashed rounded-xl p-6 transition-colors border-gray-300">
+          <div className="border-2 border-dashed rounded-xl p-6 transition-colors border-border hover:border-foreground/30">
             <div className="flex flex-col items-center mb-4">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                 <Link className="w-8 h-8 text-primary" />
               </div>
-              <p className="text-lg font-medium text-gray-900">
+              <p className="text-lg font-medium text-foreground">
                 Paste a document URL
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Supports public PDFs, DOCX, PPTX, and image URLs
               </p>
             </div>
@@ -202,7 +202,7 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
                   setUrlError(null)
                 }}
                 placeholder="https://arxiv.org/pdf/2201.04234"
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                className="flex-1 px-4 py-2.5 border border-input bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary text-sm"
                 disabled={isUrlUploading}
               />
               <button
@@ -221,9 +221,9 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
               </button>
             </div>
 
-            <div className="flex items-start gap-2 mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-              <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-amber-700">
+            <div className="flex items-start gap-2 mt-3 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-amber-600 dark:text-amber-400">
                 URL must be <strong>publicly accessible</strong>. Links behind login pages (e.g. Moodle, private Google Drive) will not work — upload the file directly instead.
               </p>
             </div>
@@ -232,13 +232,13 @@ export function UploadZone({ onAnalysisComplete, isGuestMode = false }: UploadZo
       )}
 
       {displayError && (
-        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
+        <div className="flex items-center gap-2 text-destructive bg-destructive/10 border border-destructive/20 p-3 rounded-lg">
           <AlertCircle className="w-5 h-5" />
           <p className="text-sm">{displayError}</p>
         </div>
       )}
 
-      <div className="text-sm text-gray-500">
+      <div className="text-sm text-muted-foreground">
         <p className="font-medium mb-1">Estimated costs:</p>
         <ul className="list-disc list-inside space-y-1">
           <li>OCR processing: ~$0.01</li>
