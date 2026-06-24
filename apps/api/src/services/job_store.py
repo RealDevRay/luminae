@@ -130,6 +130,7 @@ class JobStore:
     async def save_pdf(self, job_id: str, pdf_content: bytes) -> None:
         """Save PDF payload (base64 encoded) to Redis, falling back to memory."""
         import base64
+
         b64_payload = base64.b64encode(pdf_content).decode("utf-8")
         saved_to_redis = False
         try:
@@ -151,6 +152,7 @@ class JobStore:
     async def get_pdf(self, job_id: str) -> bytes | None:
         """Retrieve PDF payload and decode it back to bytes, falling back to memory."""
         import base64
+
         b64_payload = None
         try:
             redis_client = await self._get_redis()

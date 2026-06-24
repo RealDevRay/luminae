@@ -31,7 +31,6 @@ class JobStats:
 current_job_stats = contextvars.ContextVar("current_job_stats", default=None)
 
 
-
 class BudgetProtection:
     def __init__(self):
         self._redis: redis.Redis | None = None
