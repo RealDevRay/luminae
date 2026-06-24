@@ -292,9 +292,20 @@ export default function HomePage() {
               </div>
               <span className="font-bold">Luminae</span>
             </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Built by <strong>Aletheia Labs</strong> for the <strong>Mistral Worldwide Hackathon 2026</strong> • Powered by Mistral AI
-            </p>
+            <div className="text-sm text-muted-foreground text-center space-y-2">
+              <p>Built by <strong>DevRay Labs</strong> &copy; 2026</p>
+              <div className="flex flex-wrap justify-center gap-x-2 gap-y-1 text-xs">
+                <a href="https://devray.site" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Website</a>
+                <span>|</span>
+                <a href="https://discord.gg/7AvDqZdgsG" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Discord</a>
+                <span>|</span>
+                <a href="https://www.linkedin.com/in/rayklanderman/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">LinkedIn</a>
+                <span>|</span>
+                <a href="https://x.com/rayklanderman" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">X</a>
+                <span>|</span>
+                <a href="https://www.facebook.com/realdevray" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Facebook</a>
+              </div>
+            </div>
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
               <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
               <span>•</span>

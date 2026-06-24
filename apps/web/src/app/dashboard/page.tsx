@@ -163,11 +163,22 @@ export default function DashboardPage() {
       <Chatbot paperId={currentJobId || undefined} />
 
       <footer className="border-t mt-8 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs text-center text-muted-foreground">
-            Built by <strong>Aletheia Labs</strong> for the <strong>Mistral Worldwide Hackathon 2026</strong> • Powered by Mistral AI
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-xs text-muted-foreground">
+            Built by <strong>DevRay Labs</strong> &copy; 2026
           </p>
-          <div className="flex justify-center items-center space-x-4 mt-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground mt-2">
+            <a href="https://devray.site" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Website</a>
+            <span>|</span>
+            <a href="https://discord.gg/7AvDqZdgsG" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Discord</a>
+            <span>|</span>
+            <a href="https://www.linkedin.com/in/rayklanderman/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">LinkedIn</a>
+            <span>|</span>
+            <a href="https://x.com/rayklanderman" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">X</a>
+            <span>|</span>
+            <a href="https://www.facebook.com/realdevray" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Facebook</a>
+          </div>
+          <div className="flex justify-center items-center space-x-4 mt-3 text-xs text-muted-foreground">
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
             <span>•</span>
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>

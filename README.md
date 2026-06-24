@@ -23,24 +23,11 @@
 
 ---
 
-## 🚀 HACKATHON TRACK OVERVIEW
-
-**Track:** `2) Anything goes`  
-**Description:** _Use Mistral models through the API or OSS tools to create the best demos._  
-**Team:** Aletheia Labs  
-**Demo Duration:** 2 minutes
-
----
-
 ## <a name="demo"></a>🔗 LIVE LINKS & DEMO
 
 > **🌍 Live Application**: [https://luminae.qzz.io/](https://luminae.qzz.io/)  
 > **📊 Analysis Dashboard**: [https://luminae.qzz.io/dashboard](https://luminae.qzz.io/dashboard)  
 > **📺 YouTube Demo (2 min)**: [Watch on YouTube](https://youtu.be/ODygWunOA6Y)
-
-### 🧑‍⚖️ Note for Judges
-
-Luminae evaluates complex research papers using a **multi-agent reasoning swarm**. Instead of just summarizing, 5 specialized AI personas critique methodologies, audit datasets, and invent new experiments — all while remaining highly economical. We aggressively optimized our system to `ministral-8b-2512` and built a resilient API caching layer so we could process enormous PDFs at an average cost of **$0.05**, keeping us well within the hackathon budget.
 
 ---
 
@@ -205,5 +192,5 @@ Run `/schema.sql` in your Supabase SQL Editor to create `papers`, `analyses`, an
 ---
 
 <p align="center">
-  Built with 🧠 by <strong>Aletheia Labs</strong> for the <strong>Mistral Worldwide Hackathon 2026</strong>
+  Built with 🧠 by <strong>DevRay Labs</strong> &copy; 2026
 </p>

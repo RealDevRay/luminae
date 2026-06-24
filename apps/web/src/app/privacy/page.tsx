@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
         <p className="text-muted-foreground mb-8">Effective Date: April 18, 2026</p>
 
         <p className="text-muted-foreground leading-relaxed mb-8">
-          Aletheia Labs (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) operates Luminae (the &quot;Service&quot;), accessible at{' '}
+          DevRay Labs (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) operates Luminae (the &quot;Service&quot;), accessible at{' '}
           <a href="https://luminae.qzz.io" className="text-primary hover:underline">luminae.qzz.io</a>.
           This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service.
           By using Luminae, you consent to the practices described in this policy.
@@ -185,7 +185,7 @@ export default function PrivacyPolicyPage() {
             If you have any questions or concerns about this Privacy Policy or our data practices, please contact us:
           </p>
           <ul className="list-none text-muted-foreground space-y-2 mb-4">
-            <li><strong>Organization:</strong> Aletheia Labs</li>
+            <li><strong>Organization:</strong> DevRay Labs</li>
             <li><strong>Email:</strong>{' '}
               <a href="mailto:contact@qzz.io" className="text-primary hover:underline">contact@qzz.io</a>
             </li>
@@ -197,7 +197,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="border-t pt-8 mt-12">
           <p className="text-sm text-muted-foreground text-center">
-            &copy; 2026 Aletheia Labs. All rights reserved. |{' '}
+            &copy; 2026 DevRay Labs. All rights reserved. |{' '}
             <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
           </p>
         </div>

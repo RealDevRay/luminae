@@ -2,7 +2,7 @@
 
 > **Document Version:** 2.0  
 > **Project:** Luminae — Autonomous Research Illumination System  
-> **Team:** Aletheia Labs  
+> **Team:** DevRay Labs  
 > **Last Updated:** 2026-04-15  
 > **Scope:** Full-stack audit covering Backend (FastAPI), Frontend (Next.js), Database (Supabase), Caching (Redis), AI Pipeline (Mistral), DevOps (Vercel/Render), and competitive positioning.
 
