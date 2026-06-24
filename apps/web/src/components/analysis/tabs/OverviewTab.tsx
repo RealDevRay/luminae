@@ -49,8 +49,8 @@ export function OverviewTab({ data, methodology }: { data: any, methodology: any
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-muted/50 rounded-lg border border-border">
+      <div className="flex flex-wrap gap-4">
+        <div className="flex-1 min-w-[140px] p-4 bg-muted/50 rounded-lg border border-border">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Brain className="w-4 h-4" />
             <span className="text-sm">Methodology Score</span>
@@ -60,7 +60,7 @@ export function OverviewTab({ data, methodology }: { data: any, methodology: any
           </p>
         </div>
 
-        <div className="p-4 bg-muted/50 rounded-lg border border-border">
+        <div className="flex-1 min-w-[140px] p-4 bg-muted/50 rounded-lg border border-border">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <FileText className="w-4 h-4" />
             <span className="text-sm">Reproducibility</span>
@@ -70,7 +70,7 @@ export function OverviewTab({ data, methodology }: { data: any, methodology: any
           </p>
         </div>
 
-        <div className="p-4 bg-muted/50 rounded-lg border border-border">
+        <div className="flex-1 min-w-[140px] p-4 bg-muted/50 rounded-lg border border-border">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <DollarSign className="w-4 h-4" />
             <span className="text-sm">Cost</span>
@@ -80,7 +80,7 @@ export function OverviewTab({ data, methodology }: { data: any, methodology: any
           </p>
         </div>
 
-        <div className="p-4 bg-muted/50 rounded-lg border border-border">
+        <div className="flex-1 min-w-[140px] p-4 bg-muted/50 rounded-lg border border-border">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Clock className="w-4 h-4" />
             <span className="text-sm">Time</span>

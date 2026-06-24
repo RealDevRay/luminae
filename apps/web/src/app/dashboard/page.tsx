@@ -17,6 +17,11 @@ export default function DashboardPage() {
   const { user, loading, signOut } = useAuth()
   const isGuestMode = !loading && !user
 
+  const handleAnalysisComplete = (jobId: string) => {
+    setCurrentJobId(jobId)
+    setShowSidebar(false)
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
@@ -99,7 +104,7 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
                 Upload Document for Analysis
               </h2>
-              <UploadZone onAnalysisComplete={setCurrentJobId} isGuestMode={isGuestMode} />
+              <UploadZone onAnalysisComplete={handleAnalysisComplete} isGuestMode={isGuestMode} />
             </div>
             
             {!isGuestMode && (
@@ -140,7 +145,7 @@ export default function DashboardPage() {
                     Analyze Another Document
                   </h2>
                   <div className="scale-95 origin-top">
-                    <UploadZone onAnalysisComplete={setCurrentJobId} isGuestMode={isGuestMode} />
+                    <UploadZone onAnalysisComplete={handleAnalysisComplete} isGuestMode={isGuestMode} />
                   </div>
                   
                   {!isGuestMode && (

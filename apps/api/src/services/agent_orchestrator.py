@@ -2,7 +2,7 @@ import asyncio
 import time
 import uuid
 
-from ..middleware.budget_guard import budget_protection, current_job_stats, JobStats
+from ..middleware.budget_guard import JobStats, budget_protection, current_job_stats
 from .ocr_service import get_document_type, ocr_service
 from .reasoning_service import reasoning_service
 from .vision_service import vision_service

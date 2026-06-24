@@ -64,11 +64,7 @@ async def run_analysis(job_id: str, request: AnalysisRequest, user_id: str):
 
                     file_content = await asyncio.to_thread(decode_payload)
                     # Cache the PDF for the viewer
-                    redis_client = await budget_protection.get_redis()
-                    if redis_client:
-                        await redis_client.setex(
-                            f"job:{job_id}:pdf_payload", 86400 * 7, file_content
-                        )
+                    await job_store.save_pdf(job_id, file_content)
                 except Exception as e:
                     logger.error(f"File decode failed for job {job_id}: {e}")
                     await job_store.save_job(
@@ -600,11 +596,7 @@ async def compare_papers(
 @router.get("/pdf/{job_id}")
 async def get_pdf(job_id: str):
     # Retrieve PDF binary for Side-by-Side viewer
-    redis_client = await budget_protection.get_redis()
-    if not redis_client:
-        raise HTTPException(status_code=503, detail="PDF service unavailable")
-
-    pdf_content = await redis_client.get(f"job:{job_id}:pdf_payload")
+    pdf_content = await job_store.get_pdf(job_id)
 
     if pdf_content:
         from fastapi.responses import Response

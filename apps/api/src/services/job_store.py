@@ -127,5 +127,50 @@ class JobStore:
 
         return None
 
+    async def save_pdf(self, job_id: str, pdf_content: bytes) -> None:
+        """Save PDF payload (base64 encoded) to Redis, falling back to memory."""
+        import base64
+        b64_payload = base64.b64encode(pdf_content).decode("utf-8")
+        saved_to_redis = False
+        try:
+            redis_client = await self._get_redis()
+            if redis_client:
+                key = f"{self.REDIS_PREFIX}{job_id}:pdf_payload"
+                await asyncio.wait_for(
+                    redis_client.set(key, b64_payload, ex=self.TTL_SECONDS),
+                    timeout=3,
+                )
+                saved_to_redis = True
+        except Exception as e:
+            logger.warning(f"Redis PDF save failed for {job_id}: {e}")
+
+        if not saved_to_redis:
+            logger.warning(f"Using in-memory fallback for PDF {job_id}")
+            self._mem.set(f"{self.REDIS_PREFIX}{job_id}:pdf_payload", b64_payload)
+
+    async def get_pdf(self, job_id: str) -> bytes | None:
+        """Retrieve PDF payload and decode it back to bytes, falling back to memory."""
+        import base64
+        b64_payload = None
+        try:
+            redis_client = await self._get_redis()
+            if redis_client:
+                key = f"{self.REDIS_PREFIX}{job_id}:pdf_payload"
+                b64_payload = await asyncio.wait_for(redis_client.get(key), timeout=3)
+        except Exception as e:
+            logger.warning(f"Redis PDF get failed for {job_id}: {e}")
+
+        if not b64_payload:
+            b64_payload = self._mem.get(f"{self.REDIS_PREFIX}{job_id}:pdf_payload")
+
+        if b64_payload:
+            try:
+                return base64.b64decode(b64_payload)
+            except Exception as e:
+                logger.error(f"Failed to decode PDF base64 payload for {job_id}: {e}")
+                return None
+
+        return None
+
 
 job_store = JobStore()
