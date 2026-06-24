@@ -42,6 +42,18 @@ export function OverviewTab({ data, methodology }: { data: any, methodology: any
         </div>
       )}
 
+      {!data.error && (!methodology || !methodology.overall_score) && (
+        <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium text-amber-800 dark:text-amber-300 text-sm">Non-Research Document Detected</p>
+            <p className="text-amber-700 dark:text-amber-400 text-xs mt-1">
+              This document does not appear to contain standard academic research methodology. Luminae's multi-agent swarm is optimized for peer-reviewing scientific papers. Some sections (such as Methodology Score, Reproducibility, and NSF Grants) may not be applicable.
+            </p>
+          </div>
+        </div>
+      )}
+
       {data.metadata?.abstract && (
         <div>
           <h3 className="font-semibold text-foreground mb-2">Abstract</h3>

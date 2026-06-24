@@ -268,34 +268,55 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
   }
 
   const mdToHtml = (md: string) => {
+    // Escape HTML tags to prevent injections first
     let html = md
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-      .replace(/^- (.*$)/gim, '<li>$1</li>')
-      .replace(/\n\n/gim, '<br><br>')
-      .replace(/\n/gim, '<br>')
-      .replace(/<br><li>/gim, '<li>')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+
+    // Headers
+    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>')
+
+    // Bold & Italics
+    html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+    html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>')
+
+    // Bullet Lists (Convert groups of "- items" into "<ul><li>items</li></ul>")
+    html = html.replace(/^- (.*$)/gim, '<li>$1</li>')
+    html = html.replace(/((?:<li>.*?<\/li>\s*)+)/gim, '<ul>$1</ul>')
+
+    // Paragraphs / Newlines
+    html = html.replace(/\n\n/gim, '<br><br>')
+    html = html.replace(/\n/gim, '<br>')
     
+    // Clean up double tags
+    html = html.replace(/<\/ul><br><ul>/gim, '')
+    html = html.replace(/<br><ul>/gim, '<ul>')
+    html = html.replace(/<\/ul><br>/gim, '</ul>')
+
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <title>Luminae Report</title>
         <style>
-          body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #111827; max-width: 800px; margin: 0 auto; padding: 2rem; }
-          h1, h2, h3 { color: #111827; font-weight: 600; margin-top: 1.5em; margin-bottom: 0.5em; }
-          h1 { font-size: 2.25rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
-          h2 { font-size: 1.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.65; color: #1f2937; max-width: 800px; margin: 0 auto; padding: 3rem 2rem; }
+          h1, h2, h3 { color: #111827; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; letter-spacing: -0.025em; }
+          h1 { font-size: 2.25rem; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.75rem; margin-top: 0; }
+          h2 { font-size: 1.5rem; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.5rem; }
           h3 { font-size: 1.25rem; }
-          strong { font-weight: 600; }
-          li { margin-bottom: 0.25rem; margin-left: 1.5rem; list-style-type: disc; }
-          br { display: block; content: ""; margin-top: 0.5rem; }
+          strong { font-weight: 600; color: #111827; }
+          ul { margin-bottom: 1.25rem; padding-left: 1.5rem; list-style-type: disc; }
+          li { margin-bottom: 0.5rem; }
+          br { content: ""; display: block; margin-top: 0.75rem; }
+          hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
           @media print {
-            body { max-width: 100%; padding: 0; }
+            body { max-width: 100%; padding: 0; color: #000; background: #fff; }
             @page { margin: 2cm; }
+            h1, h2, h3 { page-break-after: avoid; }
+            section, .section, h2, h3, ul { page-break-inside: avoid; }
           }
         </style>
       </head>
@@ -417,14 +438,14 @@ export function AnalysisDashboard({ jobId }: AnalysisDashboardProps) {
 
       {/* Analysis Panel */}
       <div className={`bg-card rounded-xl shadow-sm border overflow-hidden flex flex-col ${hasPdf ? 'h-full' : ''}`}>
-        <div className="border-b overflow-x-auto scrollbar-hide shrink-0">
+        <div className="border-b overflow-x-auto custom-scrollbar pb-1 shrink-0">
           <nav className="flex -mb-px min-w-max">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  whitespace-nowrap py-4 px-4 sm:px-6 border-b-2 font-medium text-sm transition-colors
+                  whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors
                   ${
                     activeTab === tab.id
                       ? 'border-primary text-primary'
